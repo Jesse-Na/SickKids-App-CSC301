@@ -1,0 +1,10 @@
+export const DEVICE_TO_SERVER_BATCH_SIZE = 25;
+
+export const MIN_RSSI = -80;
+export const MTU_SIZE = 250;
+
+export const DEFAULT_READ_INTERVAL = 60000;
+export const SCAN_DURATION = 10000;
+
+export const API_KEY_CHARACTERISTIC = "0000CCAD";
+export const DEVICE_UNIQUE_ID_CHARACTERISTIC = "00005BDF";

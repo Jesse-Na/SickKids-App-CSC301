@@ -1,0 +1,144 @@
+import express from "express";
+import serverless from "serverless-http";
+import { CreateReadingType, decodeReading } from "../utils/readings";
+import getDatabase from "../database/db";
+import Reading from "../database/reading.entity";
+import { getDeviceFromApiKey } from "../utils/device.utils";
+import cors from "cors";
+import dotenv from "dotenv";
+import PatientReport from "../database/patient-reports.entity";
+import { getCurrentPatientReports } from "../utils/selfReporting.utils";
+import Patient from "../database/patient.entity";
+import moment from "moment";
+dotenv.config();
+export const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.get("/users/health", function (req, res) {
+  res.send({ status: "ok" });
+});
+
+/**
+ * Upload multiple readings at a time to the database
+ * @param req.body.readings
+ */
+app.post("/users/readings", async function (req, res) {
+  const readings: CreateReadingType[] = req.body;
+  const apiKey = req.query.apiKey as string;
+  if (!req.query.apiKey) {
+    return res.status(401).send("Api key required");
+  }
+  const device = await getDeviceFromApiKey(apiKey);
+  console.log("device", device);
+
+  if (!device) {
+    return res.status(401).send("Api key is invalid");
+  }
+
+  if (readings.length == 0) {
+    return res.status(400).send();
+  }
+
+  //check if device exists
+
+  //decode all readings and ensure input format is correct
+  let decoded: Omit<Reading, "id">[] = [];
+  try {
+    decoded = readings.map((reading) => decodeReading(reading, device));
+  } catch (e) {
+    return res.status(400).send();
+  }
+  const db = await getDatabase();
+
+  //convert to entities and save
+  const entities = decoded.map((reading) =>
+    db.getRepository(Reading).create(reading)
+  );
+  await db.getRepository(Reading).save(entities);
+
+  res.send({ interval: device.interval });
+});
+
+app.get("/users/interval", async function (req, res) {
+  const apiKey = req.query.apiKey as string;
+  if (!req.query.apiKey) {
+    return res.status(401).send("Api key required");
+  }
+  const device = await getDeviceFromApiKey(apiKey);
+
+  if (!device) {
+    return res.status(401).send("Api key is invalid");
+  }
+  return res.send(JSON.stringify(device.interval));
+});
+
+app.get("/users/selfReporting", async function (req, res) {
+  const apiKey = req.query.apiKey as string;
+  if (!req.query.apiKey) {
+    return res.status(401).send("Api key required");
+  }
+  const device = await getDeviceFromApiKey(apiKey);
+  if (!device) {
+    return res.status(401).send("Api key is invalid");
+  }
+  const patientReports = await getCurrentPatientReports(device.id);
+  res.send(patientReports);
+});
+
+app.post("/users/selfReporting", async function (req, res) {
+  const apiKey = req.query.apiKey as string;
+  if (!req.query.apiKey) {
+    return res.status(401).send("Api key required");
+  }
+  const device = await getDeviceFromApiKey(apiKey);
+
+  if (!device) {
+    return res.status(401).send("Api key is invalid");
+  }
+
+  const { date, minutes } = req.body;
+  const formattedDate = moment(date).format("YYYY-MM-DD");
+  const db = await getDatabase();
+  const patient = await db
+    .getRepository(Patient)
+    .createQueryBuilder("patient")
+    .leftJoin("patient.deviceUsages", "deviceUsage")
+    .leftJoin("deviceUsage.device", "device")
+    .where("deviceUsage.removed IS NULL AND device.id = :id", {
+      id: device.id,
+    })
+    .getOne();
+
+  const existing = await db.getRepository(PatientReport).findOne({
+    where: { date: formattedDate, patient: { id: patient.id } },
+  });
+  if (existing) {
+    return res.status(400).send("Reading exists");
+  }
+
+  const newEntry = db.getRepository(PatientReport).create({
+    patient: patient,
+    minutesWorn: minutes,
+    date: formattedDate,
+  });
+  await db.getRepository(PatientReport).save(newEntry);
+  const patientReports = await getCurrentPatientReports(device.id);
+  res.send(patientReports);
+});
+
+app.use((req, res, next) => {
+  console.log("404", req);
+  return res.set("Access-Control-Allow-Origin", "*").status(404).send({
+    reqPath: req.path,
+    error: "Not Found",
+  });
+});
+
+let devServer;
+if (process.env.NODE_ENV === "development")
+  devServer = app.listen(4000, async () => {
+    console.log("started user endpoints on 4000");
+  });
+export const server = devServer;
+export const handler = serverless(app);

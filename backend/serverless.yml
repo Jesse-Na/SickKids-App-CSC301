@@ -1,0 +1,128 @@
+# TODO: update database username and password DB_USERNAME, DB_PASSWORD, MasterUsername, MasterUserPassword
+# Note: Each time you deploy the lambda functions, you have to go to the function on AWS and add the VPC (I just select all that's there)
+# This is so that they can access the database (should only be done for admin and user apis not the coginto one)
+org: ryanreszetnik
+app: aws-sickkids-pts
+service: sickkids-pts
+frameworkVersion: '3'
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+
+package:
+  individually: true
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  profile: sickkids-serverless-user
+  region: ca-central-1
+  stage: dev
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - cognito-idp:ListUsers
+            - cognito-idp:AdminCreateUser
+            - cognito-idp:AdminDeleteUser
+            - rds-db:connect
+            - ec2:CreateNetworkInterface
+            - ec2:DescribeNetworkInterfaces
+            - ec2:DeleteNetworkInterface
+
+          Resource: "*"
+          # Resource:
+          #   - Fn::GetAtt: [CognitoUserPoolMyAdminPool, Arn]
+          #   - Fn::GetAtt: [RDSDatabase, Arn]
+          
+  environment:
+    COGNITO_USER_POOL_ID: !Ref CognitoUserPoolMyAdminPool
+    DB_HOST: !GetAtt RDSDatabase.Endpoint.Address
+    DB_PORT: !GetAtt RDSDatabase.Endpoint.Port
+    DB_USERNAME: 'postgres'
+    DB_PASSWORD: 'postgres'
+    DB_DATABASE: !GetAtt RDSDatabase.DBName
+    NODE_ENV: 'production'
+
+functions:
+  user-api:
+    handler: ./dist/src/lambdaFunctions/user-endpoints.handler
+    events:
+      - http:
+          path: /users/{param+}
+          method: ANY
+          cors: true
+  admin-cognito-api:
+    handler: ./dist/src/lambdaFunctions/admin-cognito-endpoints.handler
+    events:
+      - http:
+          path: /admin-cognito/{param+}
+          method: ANY
+          cors: true
+  admin-api:
+    handler: ./dist/src/lambdaFunctions/admin-endpoints.handler
+    # VpcConfig:
+    #   SecurityGroupIds:
+    #     - sg-085912345678492fb
+    #   SubnetIds:
+    #     - subnet-071f712345678e7c8
+    #     - subnet-07fd123456788a036
+    events:
+      - http:
+          path: /admin/{param+}
+          method: ANY
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAdminAuthorizer
+
+resources:
+  Resources:
+    CognitoUserPoolMyAdminPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: ${self:service}-admin-pool-${opt:stage, self:provider.stage}
+        UsernameAttributes:
+          - email
+        AutoVerifiedAttributes:
+          - email
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: true
+    CognitoUserPoolClientMyAdminClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: ${self:service}-${self:custom.stage}-admin-pool-client
+        UserPoolId:
+          Ref: CognitoUserPoolMyAdminPool
+        GenerateSecret: false
+    ApiGatewayAdminAuthorizer:
+      Type: AWS::ApiGateway::Authorizer
+      Properties:
+        Name: CognitoAdminPool
+        Type: COGNITO_USER_POOLS
+        IdentitySource: method.request.header.Authorization
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ProviderARNs:
+          - Fn::GetAtt:
+              - CognitoUserPoolMyAdminPool
+              - Arn
+    RDSDatabase:
+      Type: AWS::RDS::DBInstance
+      Properties: 
+        Engine: "postgres"
+        # BackupRetentionPeriod: 7  # The number of days to retain automated backups
+        DBInstanceClass: "db.t4g.micro"
+        AllocatedStorage: 20 
+        DBName: ""
+        MasterUsername: ""  # Change this to your desired master username
+        MasterUserPassword: ""
+        # ManageMasterUserPassword: true --> this was something I came across at one point which is maybe a way to get KMS to manage it for you
+        # MasterUserSecret:
+        #   KmsKeyId: !Ref KMSKey
+        MultiAZ: false
+        EngineVersion: "15.3"  # Use the latest available version of PostgreSQL
+        StorageType: "gp2"
+        PubliclyAccessible: true
