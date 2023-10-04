@@ -53,3 +53,95 @@
     1. `npx expo install yarn --npm`
     1. `eas device:create` to add a device for ad hoc provisioning
     1. `eas build --profile preview --platform ios`
+
+# Bluetooth Low Energy (BLE)
+This section details the BLE configuration of the STM32 (microcontroller) within the STM32CubeIDE IOC file.
+Open the IOC file
+Go to Middleware and Software Packs -> STM32_WPAN
+
+Under the BLE GATT tab:
+Services (4):
+
+Long Name: USAGE_DATA_SERVICE
+Short Name: UDS
+
+Long Name: DEVICE_CONFIGURATION_SERVICE
+Short Name: DCS
+
+Long Name: CURRENT_TIME_SERVICE
+Short Name: CTS
+
+Long Name: SECURITY_SERVICE
+Short Name: SS
+
+New tabs will then appear, configure them as follows:
+USAGE_DATA_SERVICE:
+
+UUID type: 16 bits
+UUID: EF41
+
+Characteristic Long Name: DATA_CHARACTERISTIC
+Characteristic Short Name: DC
+Value Length: 247
+CHAR_PROP_NOTIFY: Yes
+
+DEVICE_CONFIGURATION_SERVICE:
+
+UUID type: 128 bits
+UUID 128 input type: full
+UUID: DA 34 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+Characteristic Long Name: READING_INTERVAL_CHARACTERISTIC
+Characteristic Short Name: RIC
+UUID type: 16 bits
+UUID: C071
+Value Length: 10
+CHAR_PROP_READ: Yes
+CHAR_PROP_WRITE_WITHOUT_RESP: Yes
+GATT_NOTIFY_WRITE_REQ_AND_WAIT_FOR_APPL_RESP: No
+GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP: No
+
+CURRENT_TIME_SERVICE:
+
+UUID type: 128 bits
+UUID 128 input type: full
+UUID: 18 05 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+Characteristic Long Name: CURRENT_TIME_CHARACTERISTIC
+Characteristic Short Name: CTC
+UUID type: 16 bits
+UUID: 2A2B
+Value Length: 10
+CHAR_PROP_READ: Yes
+CHAR_PROP_WRITE_WITHOUT_RESP: Yes
+GATT_NOTIFY_WRITE_REQ_AND_WAIT_FOR_APPL_RESP: No
+GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP: No
+
+SECURITY_SERVICE:
+
+Number of Characteristics: 2
+UUID type: 128 bits
+UUID 128 input type: full
+UUID: EF 34 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+Characteristic Long Name: DEVICE_ID
+Characteristic Short Name: DEV_ID
+UUID type: 128 bits
+UUID 128 input type: reduced
+UUID: 5BDF
+Value Length: 4
+CHAR_PROP_READ: Yes
+CHAR_PROP_WRITE_WITHOUT_RESP: Yes
+GATT_NOTIFY_WRITE_REQ_AND_WAIT_FOR_APPL_RESP: No
+GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP: No
+
+Characteristic Long Name: API_KEY
+Characteristic Short Name: API_KEY
+UUID type: 128 bits
+UUID 128 input type: reduced
+UUID: CCAD
+Value Length: 44
+CHAR_PROP_READ: Yes
+CHAR_PROP_WRITE_WITHOUT_RESP: Yes
+GATT_NOTIFY_WRITE_REQ_AND_WAIT_FOR_APPL_RESP: No
+GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP: No
