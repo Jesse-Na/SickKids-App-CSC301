@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "deploy": "npm run build && sls deploy",
-    "teardown":"sls remove",
+    "teardown": "sls remove",
     "deploy:functions": "npm run build && sls deploy function -f admin-api && sls deploy function -f user-api",
     "startServer": "node dist/src/lambdaFunctions/admin-endpoints.js & node dist/src/lambdaFunctions/user-endpoints.js",
     "start": "npm run build && npm run startServer",
