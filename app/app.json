@@ -31,7 +31,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.ryanrez.sickkidspts",
+      "package": "ca.sickkids.sickkidspts",
       "permissions": [
         "BLUETOOTH",
         "BLUETOOTH_ADMIN",
