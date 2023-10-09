@@ -4,37 +4,57 @@ import CustomButton from "../../components/CustomButton";
 import useBLE from "@BLE/useBLE";
 import DevicePreview from "@BLE/components/DevicePreview";
 import PageView from "../../components/PageView";
-import { BLEDevice } from "@BLE/ble.types";
+import { BLEService } from "@src/services/BLEService";
+import { Device, DeviceId } from "react-native-ble-plx";
+import { MAX_SCAN_DURATION, MIN_RSSI } from "@BLE/constants";
 
 type Props = {
   goBack: () => void;
 };
 
 const ScanForDevices = (props: Props) => {
-  const BLE = useBLE();
+  const [foundDevices, setFoundDevices] = useState<Device[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
 
-  const { foundDevices, scanning } = BLE;
+  const isDuplicateDevice = (devices: Device[], device: Device) => {
+    return devices.some((d) => d.id === device.id);
+  }
+
+  const addDevice = (device: Device) => {
+    setFoundDevices((prevState) => {
+      console.log(prevState.length, device.id)
+      if (!isDuplicateDevice(prevState, device) && device.rssi && device.rssi > MIN_RSSI) {
+        return [...prevState, device];
+      }
+
+      console.log("DUPLICATE")
+      return prevState;
+    });
+  }
 
   const startScan = async () => {
-    BLE.startScan();
+    setIsSearching(true);
+    BLEService.scanAllDevices(addDevice);
+    setTimeout(() => {
+      stopScan();
+    }, MAX_SCAN_DURATION);
   };
 
-  const handleForgetDevice = (deviceId: string) => {
-    BLE.forgetDevice(deviceId);
-  };
+  const stopScan = () => {
+    setIsSearching(false);
+    BLEService.stopDeviceScan();
+  }
 
-  const knownDevices = useMemo(
-    () => foundDevices.filter((d) => d.known),
-    [foundDevices]
-  );
-  const newDevices = useMemo(
-    () => foundDevices.filter((d) => !d.known),
-    [foundDevices]
-  );
-
-  const connectToDevice = (device: BLEDevice) => {
-    BLE.connectDevice(device);
-    props.goBack();
+  const connectToDevice = (deviceId: DeviceId) => {
+    stopScan();
+    BLEService.connectToDevice(deviceId).then(() => {
+      setIsConnecting(false);
+      props.goBack();
+    }).catch((e) => {
+      console.log(e);
+      setIsConnecting(false);
+    });
   };
   useEffect(() => {
     startScan();
@@ -44,27 +64,22 @@ const ScanForDevices = (props: Props) => {
   return (
     <PageView>
       <CustomButton
-        title={scanning ? "Scanning" : "Scan For Devices"}
-        disabled={scanning}
+        title={isSearching ? "Scanning" : "Scan For Devices"}
+        disabled={isSearching}
         onPress={startScan}
       />
-      {knownDevices.length > 0 && (
-        <Text style={styles.title}>Known Devices</Text>
+      {foundDevices.length > 0 && (
+        <Text style={styles.title}>Found Devices</Text>
       )}
-      {knownDevices.map((device) => (
+      {foundDevices.map((device) => (
         <DevicePreview
-          key={device.deviceId}
+          key={device.id}
           device={device}
-          onPress={() => connectToDevice(device)}
-          onLongPress={() => handleForgetDevice(device.deviceId)}
-        />
-      ))}
-      {newDevices.length > 0 && <Text style={styles.title}>New Devices</Text>}
-      {newDevices.map((device) => (
-        <DevicePreview
-          key={device.deviceId}
-          device={device}
-          onPress={() => connectToDevice(device)}
+          isLoading={isSearching || isConnecting}
+          onPress={() => {
+            setIsConnecting(true);
+            connectToDevice(device.id);
+          }}
         />
       ))}
     </PageView>

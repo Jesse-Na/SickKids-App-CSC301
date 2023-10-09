@@ -1,20 +1,23 @@
-import { StyleSheet, Text, View } from "react-native";
-import React from "react";
-import CustomButton from "../../components/CustomButton";
+import { StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
 import ScanForDevices from "./ScanForDevices";
 import ActiveDevice from "./ActiveDevice";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { DeviceStackParamList } from "../tabs/DeviceTab";
-import PageView from "../../components/PageView";
-import useBLE from "@BLE/useBLE";
+import { Device } from "react-native-ble-plx";
+import { BLEService } from "@src/services/BLEService";
 
 type Props = NativeStackScreenProps<DeviceStackParamList, "Connect">;
 
 const Connect = (props: Props) => {
-  const BLE = useBLE();
+  const [device, setDevice] = useState<Device | null>(null);
 
-  return BLE.device ? (
-    <ActiveDevice />
+  useEffect(() => {
+    setDevice(BLEService.getConnectedDevice());
+  }, [BLEService.getConnectedDevice()]);
+
+  return device ? (
+    <ActiveDevice device={device}/>
   ) : (
     <ScanForDevices goBack={() => props.navigation.pop()} />
   );

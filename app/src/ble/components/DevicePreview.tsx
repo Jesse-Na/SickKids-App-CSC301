@@ -8,35 +8,19 @@ import {
 import React, { useEffect, useMemo, useState } from "react";
 import { BLEDevice, BLEState } from "@BLE/ble.types";
 import { CARD_BACKGROUND_COLOR } from "../../utils/styles";
-import useBLE from "@BLE/useBLE";
 import { MaterialIcons } from "@expo/vector-icons";
+import { Device } from "react-native-ble-plx";
 
 type Props = {
-  device: BLEDevice;
+  device: Device;
+  isLoading?: boolean;
   onPress?: () => void;
   onLongPress?: () => void;
   showState?: boolean;
   showChevron?: boolean;
 };
-export const getDeviceStateName = (state: BLEState | null) => {
-  switch (state) {
-    case "searching":
-      return "Searching";
-    case "connected":
-      return "Connected";
-    case "connecting":
-      return "Connecting";
-    default:
-      return "Not Connected";
-  }
-};
+
 const DevicePreview = (props: Props) => {
-  const { state } = useBLE();
-  const deviceState = useMemo(() => getDeviceStateName(state), [state]);
-  const isLoading = useMemo(
-    () => state === "searching" || state === "connecting",
-    [state]
-  );
   return (
     <TouchableOpacity
       disabled={!props.onPress}
@@ -47,9 +31,9 @@ const DevicePreview = (props: Props) => {
       <View style={styles.container}>
         <View>
           <Text style={styles.name}>
-            {props.device.deviceName ?? "Unknown"}
+            {props.device.name ?? "Unknown"}
           </Text>
-          <Text style={styles.id}>{props.device.deviceId}</Text>
+          <Text style={styles.id}>{props.device.id}</Text>
         </View>
 
         <View style={styles.moreInfoContainer}>
@@ -57,12 +41,12 @@ const DevicePreview = (props: Props) => {
             <View
               style={{ flexDirection: "row", gap: 5, alignItems: "center" }}
             >
-              <Text>{deviceState}</Text>
-              {isLoading && <ActivityIndicator size="small" />}
+              {/* <Text>{deviceState}</Text> */}
+              {props.isLoading && <ActivityIndicator size="small" />}
             </View>
           )}
         </View>
-        {!isLoading && (
+        {!props.isLoading && (
           <View
             style={{
               marginVertical: "auto",

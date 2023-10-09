@@ -1,104 +1,47 @@
 import { StyleSheet, Text, View } from "react-native";
-import React, { useContext, useEffect, useState } from "react";
+import React, { useState } from "react";
 import DevicePreview from "@BLE/components/DevicePreview";
 import CustomButton from "../../components/CustomButton";
-import useBLE from "@BLE/useBLE";
 import PageView from "../../components/PageView";
-import { API, Auth } from "aws-amplify";
-import { AuthState } from "../authentication/AuthWrapper";
-import CustomTextInput from "@src/components/CustomTextInput";
-import ErrorMessage from "@src/components/ErrorMessage";
+import { BLEService } from "@src/services/BLEService";
+import { Device } from "react-native-ble-plx";
 
-type Props = {};
+type Props = {
+  device: Device;
+};
 
 const ActiveDevice = (props: Props) => {
-  const BLE = useBLE();
-  const [deviceName, setDeviceName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isReset, setReset] = useState(false);
-  const [userId, setUserId] = useState<string>("");
-
-  const { isAuthenticated } = useContext(AuthState);
-
-  useEffect(() => {
-    if (isAuthenticated && BLE.device?.apiKey) {
-      API.get("AdminBackend", "/linked-device", {
-        queryStringParameters: {
-          apiKey: BLE.device.apiKey,
-        },
-      })
-        .then((device) => {
-          setDeviceName(device.name);
-        })
-        .catch(() => setDeviceName(null));
-    } else {
-      setDeviceName(null);
-    }
-  }, [isAuthenticated, BLE.device?.apiKey]);
 
   const registerDevice = async () => {
     setError(null);
 
-    try {
-      await BLE.registerActiveDevice(userId.length > 0 ? userId : undefined);
-      setReset(true);
-      setUserId("");
-      setTimeout(() => {
-        setReset(false);
-      }, 5000);
-    } catch (e: any) {
-      setError(e.message);
-    }
+    BLEService.registerDevice()
+      .then(() => {
+        console.log("registered")
+      })
+      .catch((e) => {
+        setError(e.message);
+      });
   };
 
   const disconnect = () => {
-    BLE.disconnectDevice();
+    BLEService.disconnectDevice();
   };
-  if (!BLE.device) return <Text>No Active Device</Text>;
+
+  if (!props.device) return <Text>No Active Device</Text>;
 
   return (
     <PageView>
       <Text style={styles.title}>Active Device</Text>
-      <DevicePreview device={BLE.device} showState />
+      <DevicePreview device={props.device} showState />
       <View style={styles.buttonContainer}>
         <CustomButton title="Disconnect" onPress={disconnect} />
       </View>
-      {isAuthenticated && BLE.state === "connected" && (
-        <>
-          <Text style={{ textAlign: "center", fontSize: 18 }}>
-            {deviceName
-              ? `This device is registered as ${deviceName}`
-              : "This device is not registered"}
-          </Text>
-          {/* <Text style={{ fontSize: 8 }}>{BLE.device.apiKey}</Text> */}
-
-          {isReset ? (
-            <Text style={{ textAlign: "center", fontSize: 18, padding: 10 }}>
-              Reset successful
-            </Text>
-          ) : (
-            <>
-              <CustomTextInput
-                value={userId}
-                onChangeText={setUserId}
-                placeholder="User Id"
-              />
-              <CustomButton
-                title={deviceName ? "Reset Device" : "Register Device"}
-                onPress={registerDevice}
-              />
-              {deviceName && (
-                <Text>
-                  Resetting the device will force everyone else to reconnect
-                  before they are able to sync their data. Do this whenever you
-                  are giving the device to a new person.
-                </Text>
-              )}
-            </>
-          )}
-          {error && <ErrorMessage error={error} />}
-        </>
-      )}
+      <CustomButton
+        title={"Register Device"}
+        onPress={registerDevice}
+      />
     </PageView>
   );
 };
