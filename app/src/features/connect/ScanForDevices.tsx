@@ -71,6 +71,11 @@ const ScanForDevices = (props: Props) => {
       ? decoded.charCodeAt(6)
       : 0;
     console.log("Battery: ", battery);
+
+    const isCharging: number = !Number.isNaN(decoded.charCodeAt(7))
+    ? decoded.charCodeAt(7)
+    : 0;
+    console.log("Charging: ", isCharging);
   }
 
   const connectToDevice = (deviceId: DeviceId) => {
@@ -96,8 +101,8 @@ const ScanForDevices = (props: Props) => {
           async characteristic => {
             if (characteristic.value) {
               decodeDataCharacteristic(characteristic.value);
-              DBService.saveReading(characteristic.value, deviceId);
-              APIService.syncToCloudForDevice(deviceId);
+              await DBService.saveReading(characteristic.value, "4C4493");
+              await APIService.syncToCloudForDevice("4C4493");
               // await BLEService.finishMonitor()
               // const data = base64.decode(characteristic.value);
               // setSensorMsg(data);

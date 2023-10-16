@@ -29,9 +29,9 @@ export type Reading = {
 
 export type CloudSyncInfo = {
     id: number;
-    deviceId: string;
-    lastSyncedId: number;
-    apiKey: string;
+    device_id: string;
+    last_synced_id: number;
+    api_key: string;
 };
 
 class DBServiceInstance {
@@ -132,7 +132,7 @@ class DBServiceInstance {
             db.transaction(
                 (tx) => {
                     tx.executeSql(
-                        "INSERT INTO cloud_sync_info (device_id, last_synced_id, api_key) VALUES (?)",
+                        "INSERT INTO cloud_sync_info (device_id, last_synced_id, api_key) VALUES (?, ?, ?)",
                         [deviceId, lastSyncedId, apiKey],
                         (_, { rows }) => {
                             resolve();
@@ -152,7 +152,7 @@ class DBServiceInstance {
             db.transaction(
                 (tx) => {
                     tx.executeSql(
-                        "UPDATE cloud_sync_info SET (last_synced_id, api_key) VALUES (?, ?) WHERE device_id = ?",
+                        "UPDATE cloud_sync_info SET last_synced_id = ?, api_key = ? WHERE device_id = ?",
                         [lastSyncedId, apiKey, deviceId],
                         (_, { rows }) => {
                             resolve();

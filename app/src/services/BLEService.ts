@@ -314,7 +314,7 @@ class BLEServiceInstance {
             throw new Error("No device connected");
         }
 
-        const apiKey = await APIService.registerDevice(this.connectedDevice.id);
+        const apiKey = await APIService.registerDevice("TEST");
         console.log(apiKey);
     };
 }
