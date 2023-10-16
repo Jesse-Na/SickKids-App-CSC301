@@ -17,23 +17,22 @@ import {
   getAllReports,
   removeReport,
 } from "./selfReporting.utils";
-import useBLE from "@BLE/useBLE";
 import { API } from "aws-amplify";
+import { APIService } from "@src/services/APIService";
 
 type Props = {
   goToDeviceSelect: () => void;
 };
 
 const SelfReportPage = (props: Props) => {
-  const BLE = useBLE();
   const [selectedDate, setSelectedDate] = useState<moment.Moment>(moment());
   const [reports, setReports] = useState<UsageReport[]>([]);
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
+  const [apiKey, setApiKey] = useState<string | null>(null);
 
   const reloadReports = () => {
-    if (BLE.device?.apiKey) {
-      const apiKey = BLE.device.apiKey;
+    if (apiKey) {
       API.get("UserBackend", "/selfReporting", {
         queryStringParameters: {
           apiKey: apiKey,
@@ -47,7 +46,9 @@ const SelfReportPage = (props: Props) => {
 
   useEffect(() => {
     reloadReports();
-  }, [BLE.device?.apiKey]);
+
+    setApiKey(APIService.getApiKey());
+  }, [APIService.getApiKey()]);
 
   const hoursError = useMemo(() => {
     if (hours === "") return false;
@@ -82,7 +83,7 @@ const SelfReportPage = (props: Props) => {
     API.post("UserBackend", "/selfReporting", {
       body: newReport,
       queryStringParameters: {
-        apiKey: BLE.device?.apiKey,
+        apiKey: apiKey,
       },
     }).then((reports) => {
       console.log("got reports", reports);
@@ -130,7 +131,7 @@ const SelfReportPage = (props: Props) => {
       <Text style={{ textAlign: "center", fontSize: 30 }}>
         {selectedDate.format("MMMM Do YYYY")}
       </Text>
-      {BLE.device ? (
+      {apiKey ? (
         <>
           {!existingReport ? (
             <View>
@@ -183,7 +184,7 @@ const SelfReportPage = (props: Props) => {
               <CustomButton
                 title="Submit"
                 onPress={handleSubmit}
-                disabled={minutesError || hoursError || !BLE.device}
+                disabled={minutesError || hoursError || !apiKey}
               />
             </View>
           ) : (

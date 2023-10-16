@@ -1,50 +1,51 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import React, { useEffect, useMemo, useState } from "react";
-
+import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
 import ConnectedDevice from "./ConnectedDevice";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { DeviceStackParamList } from "../tabs/DeviceTab";
-import { API, Auth } from "aws-amplify";
 import Battery from "./Battery";
-import CustomButton from "../../components/CustomButton";
-import { LinearGradient } from "expo-linear-gradient";
 import PageView from "../../components/PageView";
-import useBLE from "@BLE/useBLE";
-import * as BLEDecode from "@BLE/bleDecode";
 import HeartRate from "./HeartRate";
 import Connectivity from "./Connectivity";
 import ReadingInterval from "./ReadingInterval";
+import { BLEService } from "@src/services/BLEService";
+import { Device } from "react-native-ble-plx";
+import { APIService } from "@src/services/APIService";
 
 type Props = NativeStackScreenProps<DeviceStackParamList, "Monitor">;
 
 const Monitor = ({ navigation }: Props) => {
-  const BLE = useBLE();
-
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
+  const [device, setDevice] = useState<Device | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null);
 
   useEffect(() => {
-    if (BLE.device && BLE.state === "connected") {
+    const device = BLEService.getConnectedDevice();
+    setDevice(device);
+    const apiKey = APIService.getApiKey();
+    setApiKey(apiKey);
+
+    if (device) {
       refreshDevice();
     } else {
       setApiKeyError(null);
     }
-  }, [BLE.device?.apiKey, BLE.state]);
+  }, [BLEService.getConnectedDevice(), APIService.getApiKey()]);
+
+  const setReadingInterval = async (interval: number) => {
+  }
 
   const refreshDevice = async () => {
-    if (!BLE.device) return;
-    if (!BLE.device.apiKey) {
+    if (!device) return;
+    if (!apiKey) {
       console.log("not registered");
       setApiKeyError(
         "This device has not been registered, please contact an admin to enable it"
       );
     } else {
       try {
-        const resp = await API.get("UserBackend", "/interval", {
-          queryStringParameters: {
-            apiKey: BLE.device.apiKey,
-          },
-        });
-        BLE.setInterval(BLE.device.deviceId, parseInt(resp));
+        const resp = await APIService.getReadingInterval();
+        setReadingInterval(parseInt(resp));
         setApiKeyError(null);
       } catch (e: any) {
         if (e.response.status === 401) {
@@ -58,18 +59,18 @@ const Monitor = ({ navigation }: Props) => {
     }
   };
 
-  const battery = useMemo(() => {
-    if (!BLE.lastMessage) {
-      return {
-        percentage: 0,
-        charging: false,
-      };
-    }
-    return BLEDecode.getBatteryFromBase64(BLE.lastMessage.value);
-  }, [BLE.lastMessage]);
+  // const battery = useMemo(() => {
+  //   if (!BLE.lastMessage) {
+  //     return {
+  //       percentage: 0,
+  //       charging: false,
+  //     };
+  //   }
+  //   return BLEDecode.getBatteryFromBase64(BLE.lastMessage.value);
+  // }, [BLE.lastMessage]);
 
   return (
-    <PageView refresh={BLE.device ? refreshDevice : undefined}>
+    <PageView refresh={device ? refreshDevice : undefined}>
       <ConnectedDevice
         goToDevice={() => {
           navigation.navigate("Connect");
@@ -91,11 +92,11 @@ const Monitor = ({ navigation }: Props) => {
           }}
         >
           <Battery
-            batteryLevel={battery.percentage}
-            charging={battery.charging}
+            batteryLevel={0}
+            charging={false}
           />
-          <HeartRate />
-          <Connectivity />
+          <HeartRate device={device}/>
+          <Connectivity device={device}/>
           <ReadingInterval />
         </View>
       )}

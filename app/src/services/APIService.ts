@@ -1,6 +1,7 @@
 import { Auth, API } from "aws-amplify";
 import base64 from "react-native-base64";
 import { DeviceId } from "react-native-ble-plx";
+import { DBService } from "./DBService";
 
 const adminUrl =
     "https://4aerjx42n3.execute-api.ca-central-1.amazonaws.com/dev/admin";
@@ -42,11 +43,79 @@ class APIServiceInstance {
 
     constructor() {
         this.apiKey = "sdaffasfadsf";
-        // API.configure(AmplifyConfig);
+        API.configure(AmplifyConfig);
     }
 
     getApiKey() {
         return this.apiKey;
+    }
+
+    getReadingInterval() {
+        // API.get("UserBackend", "/interval", {
+        //     queryStringParameters: {
+        //       apiKey: this.apiKey,
+        //     },
+        //   })
+        //     .then((interval) => {
+        //       console.log("updating interval", interval);
+        //       //TODO send to device
+        //     })
+        //     .catch()
+        const interval = fetch('https://localhost:3000/users/interval', {
+            method: 'GET',
+        })
+            .then(response => response.json())
+            .then(json => {
+                return json.interval;
+            })
+            .catch(error => {
+                console.error(error);
+            });
+
+        return interval;
+    }
+
+    syncToCloudForDevice = async (deviceId: string) => {
+        console.log("syncing to cloud", deviceId);
+        const cloudSyncInfo = await DBService.getCloudSyncInfoForDevice(deviceId);
+        const readings = await DBService.getReadings(deviceId, cloudSyncInfo.lastSyncedId);
+        const messages = readings.map((reading) => reading.message);
+
+        // API.post("UserBackend", "/readings", {
+        //     body: readings.map((r) => ({
+        //         synced: r.synced,
+        //         message: r.message,
+        //     })),
+        //     queryStringParameters: {
+        //         apiKey: this.apiKey,
+        //     },
+        // })
+        //     .then(({ interval }) => {
+        //     })
+        //     .catch((e) => {
+        //         console.log("failed to sync", e);
+        //     });
+        const response = fetch('https://localhost:3000/users/readings', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'x-api-key': cloudSyncInfo.apiKey,
+            },
+            body: JSON.stringify({
+                deviceId: deviceId,
+                messages: messages
+            }),
+        }).then(response => response.json())
+            .then(json => {
+                console.log(json);
+                DBService.updateCloudSyncInfoForDevice(deviceId, readings[readings.length - 1].id, cloudSyncInfo.apiKey);
+                return json;
+            })
+            .catch(error => {
+                console.error(error);
+            });
+        console.log("synced to cloud", response);
     }
 
     registerDevice = async (
@@ -82,6 +151,7 @@ class APIServiceInstance {
         })
             .then(response => response.json())
             .then(json => {
+                DBService.insertCloudSyncInfoForDevice(hexId, 0, json.apiKey);
                 return json.apiKey;
             })
             .catch(error => {

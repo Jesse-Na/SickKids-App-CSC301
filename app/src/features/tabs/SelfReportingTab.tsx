@@ -1,6 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React from "react";
-import Profile from "../profile/Profile";
 import Settings from "../settings";
 import {
   NativeStackScreenProps,

@@ -14,7 +14,7 @@ import * as Notifications from "expo-notifications";
 import { cancelAllNotifications } from "./src/utils/notifications";
 import BLEWrapper from "@BLE/BLEWrapper";
 import READINGS from "@BLE/storage/readingsDB.utils";
-Amplify.configure(AmplifyConfig);
+// Amplify.configure(AmplifyConfig);
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -26,12 +26,12 @@ Notifications.setNotificationHandler({
 
 const root = () => {
   useEffect(() => {
-    READINGS.initializeDatabases();
+    // READINGS.initializeDatabases();
     cancelAllNotifications();
     if (Platform.OS === "android") {
       launchForegroundService();
     }
-    registerBackgroundFetch();
+    // registerBackgroundFetch();
   }, []);
   return (
     <AuthWrapper>

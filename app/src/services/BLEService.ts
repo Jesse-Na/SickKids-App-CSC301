@@ -34,6 +34,7 @@ import {
 } from 'react-native-ble-plx'
 import { PermissionsAndroid, Platform } from 'react-native'
 import { APIService } from './APIService'
+import { SECURITY_SERVICE } from '@BLE/constants'
 
 const deviceNotConnectedErrorText = 'Device is not connected'
 
@@ -124,9 +125,15 @@ class BLEServiceInstance {
             this.manager
                 .connectToDevice(deviceId)
                 .then(device => {
-                    this.connectedDevice = device
                     device.discoverAllServicesAndCharacteristics()
-                    resolve(device)
+                        .then(() => {
+                            this.connectedDevice = device
+                            resolve(device)
+                        })
+                        .catch(error => {
+                            this.onError(error)
+                            reject(error)
+                        })
                 })
                 .catch(error => {
                     if (error.errorCode === BleErrorCode.DeviceAlreadyConnected && this.connectedDevice) {

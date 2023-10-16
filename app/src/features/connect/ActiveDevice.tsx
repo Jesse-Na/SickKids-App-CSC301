@@ -25,8 +25,9 @@ const ActiveDevice = (props: Props) => {
       });
   };
 
-  const disconnect = () => {
+  const disconnect = async () => {
     BLEService.disconnectDevice();
+    // await BLEService.finishMonitor()
   };
 
   if (!props.device) return <Text>No Active Device</Text>;
