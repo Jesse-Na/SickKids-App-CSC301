@@ -4,14 +4,13 @@ import serverless from "serverless-http";
 import getDatabase from "../database/db";
 import Device from "../database/device.entity";
 import Reading from "../database/reading.entity";
-import APIKey from "../database/api-key.entity";
 import { getDeviceFromApiKey } from "../utils/device.utils";
 import dotenv from "dotenv";
 import UserDeviceUsage from "../database/user-device.entity";
 import Patient from "../database/patient.entity";
 import moment from "moment";
 import {
-  generateAPIKey,
+  getOrCreateAPIKey,
   getOrCreateDevice,
   getOrRegisterPatient,
 } from "../utils/admin.utils";
@@ -51,7 +50,7 @@ app.get("/admin/devices", async function (req, res) {
         name: device.name,
         lastSynced:
           device.readings.length > 0 ? device.readings[0].deviceSynced : null,
-        lastReset: device.apiKey ? device.apiKey.createdAt : null,
+        lastReset: device.createdAt,
         user: device.users.length > 0 ? device.users[0].patient.id : null,
       }))
     );
@@ -87,7 +86,7 @@ app.get("/admin/device/:deviceId", async function (req, res) {
       name: device.name,
       lastSynced:
         device.readings.length > 0 ? device.readings[0].deviceSynced : null,
-      lastReset: device.apiKey ? device.apiKey.createdAt : null,
+      lastReset: device.createdAt,
       user: device.users.length > 0 ? device.users[0].patient.id : null,
     };
 
@@ -134,13 +133,10 @@ app.delete("/admin/device/:deviceId", async function (req, res) {
   const db = await getDatabase();
   const device = await db.getRepository(Device).findOne({
     where: { id: req.params.deviceId },
-    relations: { apiKey: true, users: { patient: true } },
+    relations: { users: { patient: true } },
   });
 
   if (!device) return res.status(400).send("No device found");
-  if (device.apiKey) {
-    await db.getRepository(APIKey).delete({ id: device.apiKey.id });
-  }
   const activeUser = device.users?.find((user) => user.removed === null);
   if (activeUser) {
     await db.getRepository(UserDeviceUsage).delete({
@@ -151,7 +147,6 @@ app.delete("/admin/device/:deviceId", async function (req, res) {
     await db.getRepository(Device).delete({ id: device.id });
     res.send(null);
   } catch (e) {
-    device.apiKey = null;
     res.send(device);
   }
 });
@@ -175,22 +170,18 @@ app.post("/admin/register-device", async function (req, res) {
   const { deviceId, interval, userId } = req.body;
   const device = await getOrCreateDevice(deviceId);
 
-  if (device.apiKey) {
-    await db.getRepository(APIKey).delete({ id: device.apiKey.id });
-    device.apiKey = null;
-  }
   if (interval) {
     device.interval = interval;
   }
   await db.getRepository(Device).save(device);
-  //generate api key
-  const newKey = await generateAPIKey(device);
+  //get the singular api key stored in the db
+  const apiKey = await getOrCreateAPIKey();
   //link to user and disable any old user
   const activeUser = device.users?.find((u) => u.removed === null);
   //create patient if not exists
   const patient = await getOrRegisterPatient(userId);
 
-  //reomove active user if exists and is not the same
+  //remove active user if exists and is not the same
   if (
     (!patient && activeUser) ||
     (patient && activeUser && activeUser.patient.id !== userId)
@@ -209,8 +200,9 @@ app.post("/admin/register-device", async function (req, res) {
     });
     await db.getRepository(UserDeviceUsage).save(newUser);
   }
-  console.log("creating new key", newKey);
-  return res.send(newKey);
+
+  console.log("sending user the api key", apiKey);
+  return res.send(apiKey);
 });
 
 app.get("/admin/patient/:patientId", async function (req, res) {

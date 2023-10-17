@@ -13,7 +13,7 @@ import UserDeviceUsage from "../database/user-device.entity";
 import Patient from "../database/patient.entity";
 import moment from "moment";
 import {
-  generateAPIKey,
+  getOrCreateAPIKey,
   getOrCreateDevice,
   getOrRegisterPatient,
 } from "../utils/admin.utils";
