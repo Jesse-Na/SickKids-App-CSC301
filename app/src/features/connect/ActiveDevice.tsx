@@ -15,19 +15,20 @@ const ActiveDevice = (props: Props) => {
 
   const registerDevice = async () => {
     setError(null);
+    console.log("Registering Device")
 
     BLEService.registerDevice()
       .then(() => {
         console.log("registered")
       })
       .catch((e) => {
-        setError(e.message);
+        console.error(e)
       });
   };
 
   const disconnect = async () => {
     BLEService.disconnectDevice();
-    // await BLEService.finishMonitor()
+    await BLEService.finishMonitor()
   };
 
   if (!props.device) return <Text>No Active Device</Text>;

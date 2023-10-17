@@ -11,66 +11,106 @@ import ReadingInterval from "./ReadingInterval";
 import { BLEService } from "@src/services/BLEService";
 import { Device } from "react-native-ble-plx";
 import { APIService } from "@src/services/APIService";
+import { DATA_CHARACTERISTIC, DATA_USAGE_SERVICE } from "@BLE/constants";
+import base64 from "react-native-base64";
+import { DBService } from "@src/services/DBService";
+import { Buffer } from "buffer";
 
 type Props = NativeStackScreenProps<DeviceStackParamList, "Monitor">;
 
 const Monitor = ({ navigation }: Props) => {
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
-  const [device, setDevice] = useState<Device | null>(null);
+  const [deviceId, setDeviceId] = useState<Device | null>(BLEService.getConnectedDevice());
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [batteryLevel, setBatteryLevel] = useState<number>(0);
+  const [isCharging, setIsCharging] = useState<boolean>(false);
+
+  const combineBytes = (bytes: Buffer, from: number, to: number) => {
+    return bytes.subarray(from, to).reduce((a, p) => 256 * a + p, 0);
+  };
+
+  const decodeDataCharacteristic = (characteristicValue: string) => {
+    const decoded = base64.decode(characteristicValue);
+
+    const timestamp = combineBytes(Buffer.from(decoded), 0, 4) * 1000;
+    console.log("Timestamp: ", timestamp);
+    const touchSensor1: number = !Number.isNaN(decoded.charCodeAt(4))
+      ? decoded.charCodeAt(4)
+      : 0;
+    console.log("Touch Sensor 1:", touchSensor1);
+    const touchSensor2: number = !Number.isNaN(decoded.charCodeAt(5))
+      ? decoded.charCodeAt(5)
+      : 0;
+    console.log("Touch Sensor 2:", touchSensor2);
+    const battery: number = !Number.isNaN(decoded.charCodeAt(6))
+      ? decoded.charCodeAt(6)
+      : 0;
+    console.log("Battery: ", battery);
+    setBatteryLevel(battery);
+
+    const isCharging: number = !Number.isNaN(decoded.charCodeAt(7))
+      ? decoded.charCodeAt(7)
+      : 0;
+    console.log("Charging: ", isCharging);
+    setIsCharging(isCharging === 2);
+  };
 
   useEffect(() => {
-    const device = BLEService.getConnectedDevice();
-    setDevice(device);
-    const apiKey = APIService.getApiKey();
-    setApiKey(apiKey);
-
-    if (device) {
-      refreshDevice();
-    } else {
+    if (!deviceId) {
       setApiKeyError(null);
+      setDeviceId(null);
+      return;
     }
-  }, [BLEService.getConnectedDevice(), APIService.getApiKey()]);
 
-  const setReadingInterval = async (interval: number) => {
-  }
+    setDeviceId(deviceId);
 
-  const refreshDevice = async () => {
-    if (!device) return;
+    const apiKey = APIService.getApiKey();
     if (!apiKey) {
       console.log("not registered");
       setApiKeyError(
         "This device has not been registered, please contact an admin to enable it"
       );
     } else {
-      try {
-        const resp = await APIService.getReadingInterval();
-        setReadingInterval(parseInt(resp));
-        setApiKeyError(null);
-      } catch (e: any) {
-        if (e.response.status === 401) {
-          setApiKeyError(
-            "Device has been disabled remotely, please contact an admin to re-enable it"
-          );
-        } else {
-          setApiKeyError(null);
+      refreshDevice();
+    }
+
+    BLEService.setupMonitor(
+      DATA_USAGE_SERVICE,
+      DATA_CHARACTERISTIC,
+      async (characteristic) => {
+        if (characteristic.value) {
+          decodeDataCharacteristic(characteristic.value);
+          await DBService.saveReading(characteristic.value, "4C4493");
+          await APIService.syncToCloudForDevice("4C4493");
         }
+      },
+      async (error) => {
+        console.error(error);
+        BLEService.finishMonitor();
+      }
+    );
+  }, [deviceId]);
+
+  const setReadingInterval = async (interval: number) => {};
+
+  const refreshDevice = async () => {
+    try {
+      const resp = await APIService.getReadingInterval();
+      setReadingInterval(parseInt(resp));
+      setApiKeyError(null);
+    } catch (e: any) {
+      if (e.response.status === 401) {
+        setApiKeyError(
+          "Device has been disabled remotely, please contact an admin to re-enable it"
+        );
+      } else {
+        setApiKeyError(null);
       }
     }
   };
 
-  // const battery = useMemo(() => {
-  //   if (!BLE.lastMessage) {
-  //     return {
-  //       percentage: 0,
-  //       charging: false,
-  //     };
-  //   }
-  //   return BLEDecode.getBatteryFromBase64(BLE.lastMessage.value);
-  // }, [BLE.lastMessage]);
-
   return (
-    <PageView refresh={device ? refreshDevice : undefined}>
+    <PageView refresh={deviceId ? refreshDevice : undefined}>
       <ConnectedDevice
         goToDevice={() => {
           navigation.navigate("Connect");
@@ -91,12 +131,9 @@ const Monitor = ({ navigation }: Props) => {
             justifyContent: "center",
           }}
         >
-          <Battery
-            batteryLevel={0}
-            charging={false}
-          />
-          <HeartRate device={device}/>
-          <Connectivity device={device}/>
+          <Battery batteryLevel={batteryLevel} charging={isCharging} />
+          <HeartRate device={deviceId} />
+          <Connectivity device={deviceId} />
           <ReadingInterval />
         </View>
       )}

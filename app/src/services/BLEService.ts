@@ -34,7 +34,6 @@ import {
 } from 'react-native-ble-plx'
 import { PermissionsAndroid, Platform } from 'react-native'
 import { APIService } from './APIService'
-import { SECURITY_SERVICE } from '@BLE/constants'
 
 const deviceNotConnectedErrorText = 'Device is not connected'
 
@@ -270,14 +269,6 @@ class BLEServiceInstance {
         }
     }
 
-    requestConnectionPriorityForDevice = (priority: 0 | 1 | 2) => {
-        if (!this.connectedDevice) {
-            console.error(deviceNotConnectedErrorText)
-            throw new Error(deviceNotConnectedErrorText)
-        }
-        return this.manager.requestConnectionPriorityForDevice(this.connectedDevice?.id, priority)
-    }
-
     requestBluetoothPermission = async () => {
         if (Platform.OS === 'ios') {
             return true
@@ -314,7 +305,7 @@ class BLEServiceInstance {
             throw new Error("No device connected");
         }
 
-        const apiKey = await APIService.registerDevice(this.connectedDevice.id);
+        const apiKey = await APIService.registerDevice("TEST");
         console.log(apiKey);
     };
 }
