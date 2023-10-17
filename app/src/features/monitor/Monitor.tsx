@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import ConnectedDevice from "./ConnectedDevice";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { DeviceStackParamList } from "../tabs/DeviceTab";
@@ -32,10 +32,8 @@ const Monitor = ({ navigation }: Props) => {
   const decodeDataCharacteristic = (characteristicValue: string) => {
     const decoded = base64.decode(characteristicValue);
 
-    // console.log(characteristicValue, buff);
     const timestamp = combineBytes(Buffer.from(decoded), 0, 4) * 1000;
     console.log("Timestamp: ", timestamp);
-    // console.log("Timestamp: ", combineBytes(buff, 0, 4) * 1000);
     const touchSensor1: number = !Number.isNaN(decoded.charCodeAt(4))
       ? decoded.charCodeAt(4)
       : 0;

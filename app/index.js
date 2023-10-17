@@ -1,18 +1,13 @@
 import { registerRootComponent } from "expo";
 import { NavigationContainer } from "@react-navigation/native";
-import { Amplify } from "aws-amplify";
 import App from "./App";
-import { AmplifyConfig } from "./src/utils/amplify";
 import AuthWrapper from "./src/features/authentication/AuthWrapper";
 import { useEffect } from "react";
-import { registerBackgroundFetch } from "./src/utils/background";
-
 import { launchForegroundService } from "./src/utils/foregroundService";
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { cancelAllNotifications } from "./src/utils/notifications";
 import BLEWrapper from "@BLE/BLEWrapper";
-// Amplify.configure(AmplifyConfig);
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -28,7 +23,6 @@ const root = () => {
     if (Platform.OS === "android") {
       launchForegroundService();
     }
-    // registerBackgroundFetch();
   }, []);
   return (
     <AuthWrapper>

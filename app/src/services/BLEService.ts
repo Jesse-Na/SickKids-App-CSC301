@@ -269,14 +269,6 @@ class BLEServiceInstance {
         }
     }
 
-    requestConnectionPriorityForDevice = (priority: 0 | 1 | 2) => {
-        if (!this.connectedDevice) {
-            console.error(deviceNotConnectedErrorText)
-            throw new Error(deviceNotConnectedErrorText)
-        }
-        return this.manager.requestConnectionPriorityForDevice(this.connectedDevice?.id, priority)
-    }
-
     requestBluetoothPermission = async () => {
         if (Platform.OS === 'ios') {
             return true
