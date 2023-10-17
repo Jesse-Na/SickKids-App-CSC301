@@ -3,10 +3,8 @@ import {
   CreateDateColumn,
   Entity,
   OneToMany,
-  OneToOne,
   PrimaryColumn,
 } from "typeorm";
-import APIKey from "./api-key.entity";
 import Reading from "./reading.entity";
 import UserDeviceUsage from "./user-device.entity";
 
@@ -29,9 +27,4 @@ export default class Device {
 
   @OneToMany(() => Reading, (reading) => reading.device)
   readings: Reading[];
-
-  @OneToOne(() => APIKey, (apiKey) => apiKey.device, {
-    cascade: true,
-  })
-  apiKey: APIKey;
 }
