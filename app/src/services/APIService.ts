@@ -13,39 +13,38 @@ const localhost = "192.168.88.156"
 // const adminUrl = "http://172.26.204.194:4100/admin";
 // const userUrl = "http://172.26.204.194:4000/users";
 
-// const AmplifyConfig = {
-//     Auth: {
-//         region: "ca-central-1",
-//         userPoolId: "ca-central-1_WoRPGIWId",
-//         userPoolWebClientId: "26jitbu3pli31avgpomggu7gvt",
-//     },
-//     API: {
-//         endpoints: [
-//             {
-//                 name: "AdminBackend",
-//                 endpoint: adminUrl,
-//                 custom_header: async () => {
-//                     const token = (await Auth.currentSession())
-//                         .getIdToken()
-//                         .getJwtToken();
-//                     return { Authorization: `Bearer ${token}` };
-//                 },
-//             },
-//             {
-//                 name: "UserBackend",
-//                 endpoint: userUrl,
-//             },
-//         ],
-//     },
-// };
+const AmplifyConfig = {
+    Auth: {
+        region: "ca-central-1",
+        userPoolId: "ca-central-1_WoRPGIWId",
+        userPoolWebClientId: "26jitbu3pli31avgpomggu7gvt",
+    },
+    API: {
+        endpoints: [
+            {
+                name: "AdminBackend",
+                endpoint: adminUrl,
+                custom_header: async () => {
+                    const token = (await Auth.currentSession())
+                        .getIdToken()
+                        .getJwtToken();
+                    return { Authorization: `Bearer ${token}` };
+                },
+            },
+            {
+                name: "UserBackend",
+                endpoint: userUrl,
+            },
+        ],
+    },
+};
 
 
 class APIServiceInstance {
     apiKey: string | null = null;
 
     constructor() {
-        this.apiKey = "sdaffasfadsf";
-        // API.configure(AmplifyConfig);
+        API.configure(AmplifyConfig);
     }
 
     getApiKey() {
@@ -53,16 +52,6 @@ class APIServiceInstance {
     }
 
     getReadingInterval() {
-        // API.get("UserBackend", "/interval", {
-        //     queryStringParameters: {
-        //       apiKey: this.apiKey,
-        //     },
-        //   })
-        //     .then((interval) => {
-        //       console.log("updating interval", interval);
-        //       //TODO send to device
-        //     })
-        //     .catch()
         const interval = fetch('http://' + localhost + ':3000/users/interval', {
             method: 'GET',
         })
@@ -83,20 +72,6 @@ class APIServiceInstance {
             const cloudSyncInfo = await DBService.getCloudSyncInfoForDevice(deviceId);
             const readings = await DBService.getReadings(deviceId, cloudSyncInfo.last_synced_id);
 
-            // API.post("UserBackend", "/readings", {
-            //     body: readings.map((r) => ({
-            //         synced: r.synced,
-            //         message: r.message,
-            //     })),
-            //     queryStringParameters: {
-            //         apiKey: this.apiKey,
-            //     },
-            // })
-            //     .then(({ interval }) => {
-            //     })
-            //     .catch((e) => {
-            //         console.log("failed to sync", e);
-            //     });
             const response = fetch('http://' + localhost + ':3000/users/readings', {
                 method: 'POST',
                 headers: {
@@ -134,16 +109,6 @@ class APIServiceInstance {
         }
         console.log("id", hexId);
 
-        // try {
-        //     const response = await API.post("AdminBackend", "/register-device", {
-        //         body: { deviceId: hexId },
-        //     });
-        //     console.log("Response", response);
-        //     apiKey = response;
-        // } catch (e) {
-        //     console.log("sending failed", { deviceId: hexId }, e);
-        //     throw new Error("Failed to register with backend");
-        // }
         const apiKey = fetch('http://' + localhost + ':3000/users/register', {
             method: 'POST',
             headers: {
@@ -157,6 +122,7 @@ class APIServiceInstance {
             .then(response => response.json())
             .then(json => {
                 DBService.insertCloudSyncInfoForDevice(hexId, 0, json.apiKey);
+                this.apiKey = json.apiKey;
                 return json.apiKey;
             })
             .catch(error => {

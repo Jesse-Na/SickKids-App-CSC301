@@ -34,7 +34,6 @@ import {
 } from 'react-native-ble-plx'
 import { PermissionsAndroid, Platform } from 'react-native'
 import { APIService } from './APIService'
-import { SECURITY_SERVICE } from '@BLE/constants'
 
 const deviceNotConnectedErrorText = 'Device is not connected'
 

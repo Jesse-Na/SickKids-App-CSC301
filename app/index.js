@@ -1,5 +1,4 @@
 import { registerRootComponent } from "expo";
-import { Provider } from "react-redux";
 import { NavigationContainer } from "@react-navigation/native";
 import { Amplify } from "aws-amplify";
 import App from "./App";
@@ -13,7 +12,6 @@ import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { cancelAllNotifications } from "./src/utils/notifications";
 import BLEWrapper from "@BLE/BLEWrapper";
-import READINGS from "@BLE/storage/readingsDB.utils";
 // Amplify.configure(AmplifyConfig);
 
 Notifications.setNotificationHandler({
@@ -26,7 +24,6 @@ Notifications.setNotificationHandler({
 
 const root = () => {
   useEffect(() => {
-    // READINGS.initializeDatabases();
     cancelAllNotifications();
     if (Platform.OS === "android") {
       launchForegroundService();

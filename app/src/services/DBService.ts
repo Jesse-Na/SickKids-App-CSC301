@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS cloud_sync_info (
 export type Reading = {
     id: number;
     synced: string;
-    deviceId: string;
+    device_id: string;
     message: string;
 };
 
@@ -73,7 +73,7 @@ class DBServiceInstance {
                             resolve({
                                 id: insertId!,
                                 synced: new Date().toISOString(),
-                                deviceId,
+                                device_id: deviceId,
                                 message,
                             });
                         }
