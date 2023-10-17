@@ -4,7 +4,7 @@ import Device from "../database/device.entity";
 import APIKey from "../database/api-key.entity";
 import * as hashing from "./hashing";
 
-const DEFUALT_INTERVAL = 60000;
+const DEFAULT_INTERVAL = 60000;
 
 export const getOrRegisterPatient = async (patientId: string) => {
   const db = await getDatabase();
@@ -22,24 +22,27 @@ export const getOrCreateDevice = async (deviceId: string) => {
   const db = await getDatabase();
   const device = await db.getRepository(Device).findOne({
     where: { id: deviceId },
-    relations: { apiKey: true, users: { patient: true } },
+    relations: { users: { patient: true } },
   });
   if (device) return device;
   const newDevice = db.getRepository(Device).create({
     id: deviceId,
     name: deviceId,
-    interval: DEFUALT_INTERVAL,
+    interval: DEFAULT_INTERVAL,
   });
   return await db.getRepository(Device).save(newDevice);
 };
 
-export const generateAPIKey = async (device: Device) => {
+export const getOrCreateAPIKey = async () => {
   const db = await getDatabase();
-  const newKey = hashing.generateKey();
-  const newKeyEntity = db.getRepository(APIKey).create({
-    hashedKey: newKey.hashedKey,
-    device,
+  
+  if (await db.getRepository(APIKey).count() == 0) {
+    const newKeyEntity = db.getRepository(APIKey).create({});
+    await db.getRepository(APIKey).save(newKeyEntity);
+  }  
+
+  const apiKeyEntity = await db.getRepository(APIKey).findOne({
+    order: { createdAt: "DESC"}
   });
-  await db.getRepository(APIKey).save(newKeyEntity);
-  return newKey.key;
+  return apiKeyEntity.apiKeyValue
 };
