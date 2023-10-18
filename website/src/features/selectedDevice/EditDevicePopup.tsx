@@ -28,23 +28,29 @@ export default function EditDevicePopup({
 }: Props) {
   const [name, setName] = useState("");
   const [interval, setInterval] = useState("");
+  const [frequency, setFrequency] = useState("");
 
   useEffect(() => {
     if (open) {
       setName(device.name);
       setInterval(`${device.interval}`);
+      setFrequency(`${device.frequency}`);
     }
   }, [open, device]);
 
   const intervalError =
     Number.isNaN(parseInt(interval)) || parseInt(interval) < 1000;
   const nameError = name.length === 0;
+  const frequencyError =
+    Number.isNaN(parseInt(frequency)) || parseInt(frequency) < 1;
   const handleSave = () => {
-    if (intervalError || nameError) return;
+    if (intervalError || nameError || frequencyError) return;
     const parsedInterval = parseInt(interval);
+    const parsedFrequency = parseInt(frequency);
     updateDevice(device.id, {
       name,
       interval: parsedInterval,
+      frequency: parsedFrequency,
     }).then((device) => {
       setDevice(device);
       handleClose();
@@ -69,6 +75,14 @@ export default function EditDevicePopup({
             label="Reading interval (ms)"
             type="number"
             error={intervalError}
+          />
+          <TextField
+            value={frequency}
+            onChange={(e) => setFrequency(e.target.value)}
+            variant="outlined"
+            label="Questionnaire Frequency (Days)"
+            type="number"
+            error={frequencyError}
           />
         </Box>
         <Box>

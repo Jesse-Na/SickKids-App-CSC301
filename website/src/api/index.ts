@@ -15,7 +15,7 @@ export const getDevice = (deviceId: string): Promise<Device> => {
 
 export const updateDevice = (
   deviceId: string,
-  device: { name: string; interval: number }
+  device: { name: string; interval: number, frequency: number }
 ): Promise<Device> => {
   return API.put("AWSBackend", `/device/${deviceId}`, { body: device });
 };
