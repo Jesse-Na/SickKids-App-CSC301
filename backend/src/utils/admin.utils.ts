@@ -4,8 +4,8 @@ import Device from "../database/device.entity";
 import APIKey from "../database/api-key.entity";
 import * as hashing from "./hashing";
 
-const DEFUALT_INTERVAL = 60000;
-const DEFUALT_FREQUENCY = 1;
+const DEFAULT_INTERVAL = 60000;
+const DEFAULT_FREQUENCY = 1;
 
 export const getOrRegisterPatient = async (patientId: string) => {
   const db = await getDatabase();
@@ -29,8 +29,8 @@ export const getOrCreateDevice = async (deviceId: string) => {
   const newDevice = db.getRepository(Device).create({
     id: deviceId,
     name: deviceId,
-    interval: DEFUALT_INTERVAL,
-    frequency: DEFUALT_FREQUENCY,
+    interval: DEFAULT_INTERVAL,
+    frequency: DEFAULT_FREQUENCY,
   });
   return await db.getRepository(Device).save(newDevice);
 };
