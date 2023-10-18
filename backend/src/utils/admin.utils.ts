@@ -5,6 +5,7 @@ import APIKey from "../database/api-key.entity";
 import * as hashing from "./hashing";
 
 const DEFUALT_INTERVAL = 60000;
+const DEFUALT_FREQUENCY = 1;
 
 export const getOrRegisterPatient = async (patientId: string) => {
   const db = await getDatabase();
@@ -29,6 +30,7 @@ export const getOrCreateDevice = async (deviceId: string) => {
     id: deviceId,
     name: deviceId,
     interval: DEFUALT_INTERVAL,
+    frequency: DEFUALT_FREQUENCY,
   });
   return await db.getRepository(Device).save(newDevice);
 };
