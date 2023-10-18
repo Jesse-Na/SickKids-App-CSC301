@@ -8,6 +8,7 @@ import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { cancelAllNotifications } from "./src/utils/notifications";
 import BLEWrapper from "@BLE/BLEWrapper";
+import BLEContextProvider from "@src/context/BLEContextProvider";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -26,13 +27,15 @@ const root = () => {
   }, []);
   return (
     <AuthWrapper>
-      <BLEWrapper>
-        <NavigationContainer>
-          <AuthWrapper>
-            <App />
-          </AuthWrapper>
-        </NavigationContainer>
-      </BLEWrapper>
+      <BLEContextProvider>
+        <BLEWrapper>
+          <NavigationContainer>
+            <AuthWrapper>
+              <App />
+            </AuthWrapper>
+          </NavigationContainer>
+        </BLEWrapper>
+      </BLEContextProvider>
     </AuthWrapper>
   );
 };

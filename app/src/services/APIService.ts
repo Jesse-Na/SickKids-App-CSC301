@@ -3,7 +3,7 @@ import base64 from "react-native-base64";
 import { DeviceId } from "react-native-ble-plx";
 import { DBService } from "./DBService";
 
-const localhost = "192.168.88.156"
+const localhost = "172.20.10.8"
 
 class APIServiceInstance {
     apiKey: string | null = null;
@@ -48,8 +48,8 @@ class APIServiceInstance {
                     messages: readings
                 }),
             }).then(response => {
-                    return response;
-                })
+                return response;
+            })
                 .catch(error => {
                     console.error(error);
                 });

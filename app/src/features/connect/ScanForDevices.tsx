@@ -7,12 +7,14 @@ import { BLEService } from "@src/services/BLEService";
 import { Device, DeviceId } from "react-native-ble-plx";
 import { DEVICE_UNIQUE_ID_CHARACTERISTIC, MAX_SCAN_DURATION, MIN_RSSI, SECURITY_SERVICE } from "@BLE/constants";
 import base64 from "react-native-base64";
+import { useBLEContext } from "@src/context/BLEContextProvider";
 
 type Props = {
   goBack: () => void;
 };
 
 const ScanForDevices = (props: Props) => {
+  const {setDevice} = useBLEContext();
   const [foundDevices, setFoundDevices] = useState<Device[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -47,7 +49,7 @@ const ScanForDevices = (props: Props) => {
   const connectToDevice = (deviceId: DeviceId) => {
     stopScan();
     BLEService.connectToDevice(deviceId)
-      .then(() => {
+      .then((device) => {
         BLEService.readCharacteristicForDevice(SECURITY_SERVICE, DEVICE_UNIQUE_ID_CHARACTERISTIC)
           .then(characteristic => {
             if (characteristic.value) {
@@ -63,6 +65,10 @@ const ScanForDevices = (props: Props) => {
 
         setIsConnecting(false);
         props.goBack();
+
+        // update device in blecontext
+        setDevice(device)
+
       }).catch((e) => {
         console.log(e);
         setIsConnecting(false);

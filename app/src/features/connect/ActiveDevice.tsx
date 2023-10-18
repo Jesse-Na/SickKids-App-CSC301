@@ -5,12 +5,14 @@ import CustomButton from "../../components/CustomButton";
 import PageView from "../../components/PageView";
 import { BLEService } from "@src/services/BLEService";
 import { Device } from "react-native-ble-plx";
+import { useBLEContext } from "@src/context/BLEContextProvider";
 
 type Props = {
   device: Device;
 };
 
 const ActiveDevice = (props: Props) => {
+  const { setDevice } = useBLEContext();
   const [error, setError] = useState<string | null>(null);
 
   const registerDevice = async () => {
@@ -28,6 +30,7 @@ const ActiveDevice = (props: Props) => {
 
   const disconnect = async () => {
     BLEService.disconnectDevice();
+    setDevice(null)
     await BLEService.finishMonitor()
   };
 

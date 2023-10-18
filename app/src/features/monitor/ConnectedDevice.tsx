@@ -5,17 +5,14 @@ import { Ionicons } from "@expo/vector-icons";
 import Card from "../../components/Card";
 import { BLEService } from "@src/services/BLEService";
 import { Device } from "react-native-ble-plx";
+import { useBLEContext } from "@src/context/BLEContextProvider";
 
 type Props = {
   goToDevice: () => void;
 };
 
 const ConnectedDevice = (props: Props) => {
-  const [device, setDevice] = useState<Device | null>(null);
-
-  useEffect(() => {
-    setDevice(BLEService.getConnectedDevice());
-  }, [BLEService.getConnectedDevice()]);
+  const { device } = useBLEContext();
 
   if (!device)
     return (
@@ -28,7 +25,7 @@ const ConnectedDevice = (props: Props) => {
             <View style={styles.chevronContainer}>
               <Ionicons name={"chevron-forward"} size={20} />
             </View>
-          </View>
+          </View> 
         </Card>
       </View>
     );

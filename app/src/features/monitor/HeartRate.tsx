@@ -4,18 +4,17 @@ import Card from "../../components/Card";
 import { Ionicons } from "@expo/vector-icons";
 import { Device } from "react-native-ble-plx";
 
-type Props = {
+type HeartRateProps = {
+  heartRate: number;
   device: Device | null;
 };
 
-const heartRate = 120;
-
-const HeartRate = (props: Props) => {
+const HeartRate: React.FC<HeartRateProps> = ({ heartRate, device }) => {
   const [isBig, setIsBig] = React.useState(false);
   const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (props.device) {
+    if (device && heartRate) {
       intervalRef.current && clearInterval(intervalRef.current);
       intervalRef.current = setInterval(() => {
         setIsBig(true);
@@ -31,16 +30,16 @@ const HeartRate = (props: Props) => {
     } else {
       intervalRef.current && clearInterval(intervalRef.current);
     }
-  }, [heartRate, props.device]);
+  }, [heartRate, device]);
   const size = isBig ? 100 : 96;
   return (
     <Card height={170} width={170}>
       <Text style={styles.title}>HeartRate</Text>
       <View style={{ height: 100 }}>
         <Ionicons
-          name={props.device ? "heart" : "heart-dislike"}
+          name={device ? "heart" : "heart-dislike"}
           size={size}
-          color={props.device ? "#b44" : "#aaa"}
+          color={device ? "#b44" : "#aaa"}
         />
       </View>
       <Text style={{ fontSize: 18 }}>{heartRate} bpm</Text>

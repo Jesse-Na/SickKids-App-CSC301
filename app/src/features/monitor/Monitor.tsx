@@ -15,15 +15,15 @@ import { DATA_CHARACTERISTIC, DATA_USAGE_SERVICE } from "@BLE/constants";
 import base64 from "react-native-base64";
 import { DBService } from "@src/services/DBService";
 import { Buffer } from "buffer";
-
+import { useBLEContext, defaultDeviceProperties } from "@src/context/BLEContextProvider";
 type Props = NativeStackScreenProps<DeviceStackParamList, "Monitor">;
 
 const Monitor = ({ navigation }: Props) => {
+  const { device, setDevice, deviceProperties, setDeviceProperties } = useBLEContext();
+  const { batteryLevel, isCharging, heartRate } = deviceProperties || defaultDeviceProperties;
+
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
-  const [deviceId, setDeviceId] = useState<Device | null>(BLEService.getConnectedDevice());
   const [apiKey, setApiKey] = useState<string | null>(null);
-  const [batteryLevel, setBatteryLevel] = useState<number>(0);
-  const [isCharging, setIsCharging] = useState<boolean>(false);
 
   const combineBytes = (bytes: Buffer, from: number, to: number) => {
     return bytes.subarray(from, to).reduce((a, p) => 256 * a + p, 0);
@@ -33,46 +33,48 @@ const Monitor = ({ navigation }: Props) => {
     const decoded = base64.decode(characteristicValue);
 
     const timestamp = combineBytes(Buffer.from(decoded), 0, 4) * 1000;
-    console.log("Timestamp: ", timestamp);
     const touchSensor1: number = !Number.isNaN(decoded.charCodeAt(4))
       ? decoded.charCodeAt(4)
       : 0;
-    console.log("Touch Sensor 1:", touchSensor1);
     const touchSensor2: number = !Number.isNaN(decoded.charCodeAt(5))
       ? decoded.charCodeAt(5)
       : 0;
-    console.log("Touch Sensor 2:", touchSensor2);
     const battery: number = !Number.isNaN(decoded.charCodeAt(6))
       ? decoded.charCodeAt(6)
       : 0;
-    console.log("Battery: ", battery);
-    setBatteryLevel(battery);
+    setDeviceProperties("batteryLevel", battery);
+
+    const heartRate: number = !Number.isNaN(decoded.charCodeAt(8))
+      ? decoded.charCodeAt(8)
+      : 0;
+
+    console.log("monitior.tsx", heartRate)
+    setDeviceProperties("heartRate", heartRate);
 
     const isCharging: number = !Number.isNaN(decoded.charCodeAt(7))
       ? decoded.charCodeAt(7)
       : 0;
-    console.log("Charging: ", isCharging);
-    setIsCharging(isCharging === 2);
+    setDeviceProperties("isCharging", isCharging > 0);
   };
 
   useEffect(() => {
-    if (!deviceId) {
+    if (!device) {
       setApiKeyError(null);
-      setDeviceId(null);
+      setDevice(null);
       return;
     }
 
-    setDeviceId(deviceId);
+    setDevice(device);
 
     const apiKey = APIService.getApiKey();
-    if (!apiKey) {
-      console.log("not registered");
-      setApiKeyError(
-        "This device has not been registered, please contact an admin to enable it"
-      );
-    } else {
-      refreshDevice();
-    }
+    // if (!apiKey) {
+    //   console.log("not registered");
+    //   setApiKeyError(
+    //     "This device has not been registered, please contact an admin to enable it"
+    //   );
+    // } else {
+    //   refreshDevice();
+    // }
 
     BLEService.setupMonitor(
       DATA_USAGE_SERVICE,
@@ -89,9 +91,9 @@ const Monitor = ({ navigation }: Props) => {
         BLEService.finishMonitor();
       }
     );
-  }, [deviceId]);
+  }, [device]);
 
-  const setReadingInterval = async (interval: number) => {};
+  const setReadingInterval = async (interval: number) => { };
 
   const refreshDevice = async () => {
     try {
@@ -110,7 +112,7 @@ const Monitor = ({ navigation }: Props) => {
   };
 
   return (
-    <PageView refresh={deviceId ? refreshDevice : undefined}>
+    <PageView refresh={device ? refreshDevice : undefined}>
       <ConnectedDevice
         goToDevice={() => {
           navigation.navigate("Connect");
@@ -132,8 +134,8 @@ const Monitor = ({ navigation }: Props) => {
           }}
         >
           <Battery batteryLevel={batteryLevel} charging={isCharging} />
-          <HeartRate device={deviceId} />
-          <Connectivity device={deviceId} />
+          <HeartRate heartRate={heartRate} device={device} />
+          <Connectivity device={device} />
           <ReadingInterval />
         </View>
       )}

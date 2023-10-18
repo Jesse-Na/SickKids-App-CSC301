@@ -4,11 +4,13 @@ import { StyleSheet, Text } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { BLEContext } from "@BLE/BLEWrapper";
 import { convertMsToString } from "@src/utils/utils";
+import { useBLEContext } from "@src/context/BLEContextProvider";
 
 type Props = {};
 
 export default function ReadingInterval({}: Props) {
-  const { device } = useContext(BLEContext);
+  const { device } = useBLEContext();
+  
   const interval = device?.readInterval;
   return (
     <Card height={170} width={170}>
