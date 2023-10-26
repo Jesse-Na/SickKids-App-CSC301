@@ -12,6 +12,8 @@ web-build/
 ios/
 android/
 app/
+.env
+.jest/
 
 # macOS
 .DS_Store
