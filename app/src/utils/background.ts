@@ -5,7 +5,7 @@ import NetInfo from "@react-native-community/netinfo";
 import { launchForegroundService } from "./foregroundService";
 import { Platform } from "react-native";
 import moment from "moment";
-import { scheduleNotifications, requestNotificationPermissions, sendOneTimeNotification} from "./notifications";
+import { requestNotificationPermissions} from "./notifications";
 import BLE from "@BLE/ble";
 import { getActiveDevice } from "@BLE/storage/asyncStorage.utils";
 
@@ -80,10 +80,6 @@ export const launchBackground = async () => {
     await launchForegroundService();
   }
   console.log("sending one time notification");
-  // uncomment these to test notifications: 
-  // first one sends a notification on launchbackground, 2nd sends one every minute.
-  //await sendOneTimeNotification("Battery low.", "Your battery is at %x percent", 5);
-  //await scheduleNotifications();
   await registerBackgroundFetch();
 }
 
