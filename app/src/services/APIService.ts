@@ -1,14 +1,32 @@
-import { Auth, API } from "aws-amplify";
+import { API, Amplify } from 'aws-amplify';
 import base64 from "react-native-base64";
 import { DeviceId } from "react-native-ble-plx";
 import { DBService } from "./DBService";
 
-const localhost = "172.20.10.8"
+const adminUrl = "https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/admin";
+const userUrl = "https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/users";
+
+export const AmplifyConfig = {
+    Auth: {
+        region: "ca-central-1",
+        userPoolId: "ca-central-1_NZlWWBBKg",
+        userPoolWebClientId: "27acm70ngeh0p5kkf5qruvbtbo",
+    },
+    API: {
+        endpoints: [
+            {
+                name: "UserBackend",
+                endpoint: userUrl,
+            },
+        ],
+    },
+};
 
 class APIServiceInstance {
     apiKey: string | null = null;
 
     constructor() {
+        Amplify.configure(AmplifyConfig)
     }
 
     getApiKey() {
@@ -16,16 +34,15 @@ class APIServiceInstance {
     }
 
     getReadingInterval() {
-        const interval = fetch('http://' + localhost + ':3000/users/interval', {
-            method: 'GET',
+        const interval = API.get("UserBackend", "/interval", {
+            queryStringParameters: {
+                apiKey: this.apiKey,
+            },
         })
-            .then(response => response.json())
-            .then(json => {
-                return json.interval;
+            .then((interval) => {
+                return interval;
             })
-            .catch(error => {
-                console.error(error);
-            });
+            .catch((e) => console.log("failed to get interval", e))
 
         return interval;
     }
@@ -36,26 +53,23 @@ class APIServiceInstance {
             const cloudSyncInfo = await DBService.getCloudSyncInfoForDevice(deviceId);
             const readings = await DBService.getReadings(deviceId, cloudSyncInfo.last_synced_id);
 
-            const response = fetch('http://' + localhost + ':3000/users/readings', {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                    'x-api-key': cloudSyncInfo.api_key,
+            const readingInterval = API.post("UserBackend", "/readings", {
+                body: readings.map((r) => ({
+                    synced: r.synced,
+                    message: r.message,
+                })),
+                queryStringParameters: {
+                    apiKey: this.apiKey,
                 },
-                body: JSON.stringify({
-                    deviceId: deviceId,
-                    messages: readings
-                }),
-            }).then(response => {
-                return response;
             })
-                .catch(error => {
-                    console.error(error);
+                .then(async ({ interval }) => {
+                    await DBService.updateCloudSyncInfoForDevice(deviceId, readings[readings.length - 1].id, cloudSyncInfo.api_key);
+                    return interval;
+                })
+                .catch((e) => {
+                    console.error("failed to sync", e);
                 });
 
-            await DBService.updateCloudSyncInfoForDevice(deviceId, readings[readings.length - 1].id, cloudSyncInfo.api_key);
-            console.log("synced to cloud", response);
         } catch (e) {
             console.log("failed to sync", e);
             return;
@@ -73,18 +87,15 @@ class APIServiceInstance {
         }
         console.log("id", hexId);
 
-        try {
-            const response = await API.post("AdminBackend", "/register-device", {
+        const response = await API.post("UserBackend", "/register-device", {
                 body: { deviceId: hexId },
+            }).then(async (response) => {
+                console.log("Response", response);
+                await DBService.insertCloudSyncInfoForDevice(hexId, 0, response)
+                return response;
+            }).catch((e) => {
+                console.error("device registration failed", { deviceId: hexId }, e);
             });
-            console.log("Response", response);
-            const apiKey = response;
-            DBService.insertCloudSyncInfoForDevice(hexId, 0, apiKey)
-            return apiKey
-        } catch (e) {
-            console.log("sending failed", { deviceId: hexId }, e);
-            throw new Error("Failed to register with backend");
-        }
     };
 }
 
