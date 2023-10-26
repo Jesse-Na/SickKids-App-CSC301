@@ -3,14 +3,14 @@ import base64 from "react-native-base64";
 import { DeviceId } from "react-native-ble-plx";
 import { DBService } from "./DBService";
 
-const adminUrl = process.env.REACT_APP_ADMIN_BACKEND;
-const userUrl = process.env.REACT_APP_USER_BACKEND;
+const adminUrl = "https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/admin";
+const userUrl = "https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/users";
 
 export const AmplifyConfig = {
     Auth: {
-        region: process.env.REACT_APP_REGION,
-        userPoolId: process.env.REACT_APP_COGNITO_USER_POOL_ID,
-        userPoolWebClientId: process.env.REACT_APP_COGNITO_USER_POOL_WEB_CLIENT_ID,
+        region: "ca-central-1",
+        userPoolId: "ca-central-1_NZlWWBBKg",
+        userPoolWebClientId: "27acm70ngeh0p5kkf5qruvbtbo",
     },
     API: {
         endpoints: [
