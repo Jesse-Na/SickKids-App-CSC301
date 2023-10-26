@@ -7,18 +7,23 @@ export const scheduleNotifications = async () => {
     content: {
       title: "Please Reconnect PTS Device",
       body: "The device has not been connected recently, please open the app to reconnect.",
+      android: {
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+      }
     },
-    trigger: { minute: 5, repeats: true },
+    trigger: { minute: 1, repeats: true },
+    
   });
 };
 // cancel notifications
 export const onAppLoad = async () => {};
-//Every couple hours send a notification to reconnect the device
+//Every few hours send a notification to reconnect the device if device isn't connected
 export const disconnected = async () => {};
 //cancel disconnected
 export const connected = async () => {};
 export const syncedToCloud = async () => {};
 export const cloudSyncedFailed = async () => {};
+
 
 export const sendOneTimeNotification = async (
   title: string,

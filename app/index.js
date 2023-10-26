@@ -9,6 +9,7 @@ import * as Notifications from "expo-notifications";
 import { cancelAllNotifications } from "./src/utils/notifications";
 import BLEWrapper from "@BLE/BLEWrapper";
 import BLEContextProvider from "@src/context/BLEContextProvider";
+import { launchBackground } from "@src/utils/background";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -21,9 +22,7 @@ Notifications.setNotificationHandler({
 const root = () => {
   useEffect(() => {
     cancelAllNotifications();
-    if (Platform.OS === "android") {
-      launchForegroundService();
-    }
+    launchBackground()
   }, []);
   return (
     <AuthWrapper>

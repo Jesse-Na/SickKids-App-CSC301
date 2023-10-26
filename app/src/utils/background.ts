@@ -5,7 +5,7 @@ import NetInfo from "@react-native-community/netinfo";
 import { launchForegroundService } from "./foregroundService";
 import { Platform } from "react-native";
 import moment from "moment";
-import { scheduleNotifications } from "./notifications";
+import { scheduleNotifications, requestNotificationPermissions, sendOneTimeNotification} from "./notifications";
 import BLE from "@BLE/ble";
 import { getActiveDevice } from "@BLE/storage/asyncStorage.utils";
 
@@ -22,9 +22,7 @@ export const checkStatusAsync = async () => {
 
 TaskManager.defineTask(BACKGROUND_TASK, async () => {
   console.log("Background task running", new Date().toISOString());
-  if (Platform.OS === "android") {
-    await launchForegroundService();
-  }
+
   // const device = await getActiveDevice();
   // if (
   //   !device ||
@@ -56,9 +54,7 @@ TaskManager.defineTask(BACKGROUND_TASK, async () => {
 
 export const registerBackgroundFetch = async () => {
   // console.log('Registering background task');
-  console.log("registering");
   const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK);
-  console.log("Registering background task", isRegistered);
   if (isRegistered) {
     // await unregisterBackgroundFetch();
     return;
@@ -75,6 +71,21 @@ export const registerBackgroundFetch = async () => {
     console.log("error", e);
   }
 };
+
+export const launchBackground = async () => {
+  // request permissions necessary to send notifs in background:
+  await requestNotificationPermissions();
+  if (Platform.OS === "android") {
+    // Launch the foreground serve (only available on android)
+    await launchForegroundService();
+  }
+  console.log("sending one time notification");
+  // uncomment these to test notifications: 
+  // first one sends a notification on launchbackground, 2nd sends one every minute.
+  //await sendOneTimeNotification("Battery low.", "Your battery is at %x percent", 5);
+  //await scheduleNotifications();
+  await registerBackgroundFetch();
+}
 
 export const unregisterBackgroundFetch = () => {
   return BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASK);
