@@ -1,4 +1,4 @@
-import { API, Amplify } from 'aws-amplify';
+import { API, Amplify, Auth } from 'aws-amplify';
 import base64 from "react-native-base64";
 import { DeviceId } from "react-native-ble-plx";
 import { DBService } from "./DBService";
@@ -14,6 +14,16 @@ export const AmplifyConfig = {
     },
     API: {
         endpoints: [
+            {
+                name: "AdminBackend",
+                endpoint: adminUrl,
+                custom_header: async () => {
+                    const token = (await Auth.currentSession())
+                      .getIdToken()
+                      .getJwtToken();
+                    return { Authorization: `Bearer ${token}` };
+                  },
+            },
             {
                 name: "UserBackend",
                 endpoint: userUrl,
@@ -87,7 +97,7 @@ class APIServiceInstance {
         }
         console.log("id", hexId);
 
-        const response = await API.post("UserBackend", "/register-device", {
+        const response = await API.post("AdminBackend", "/register-device", {
                 body: { deviceId: hexId },
             }).then(async (response) => {
                 console.log("Response", response);
