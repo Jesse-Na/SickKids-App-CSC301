@@ -299,15 +299,6 @@ class BLEServiceInstance {
 
         return false
     }
-
-    registerDevice = async () => {
-        if (!this.connectedDevice) {
-            throw new Error("No device connected");
-        }
-
-        const apiKey = await APIService.registerDevice("TEST");
-        console.log(apiKey);
-    };
 }
 
 export const BLEService = new BLEServiceInstance()

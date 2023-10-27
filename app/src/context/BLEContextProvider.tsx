@@ -56,7 +56,7 @@ const BLEContextProvider: FC<BLEContextProviderProps> = ({ children }) => {
             [property]: newValue, // dynamically set the property name
         }));
     };
-    
+
     return (
         <BLEContext.Provider value={{
             device,

@@ -3,6 +3,7 @@ import base64 from "react-native-base64";
 import { DeviceId } from "react-native-ble-plx";
 import { DBService } from "./DBService";
 
+const localhost = "192.168.88.156"
 const adminUrl = "https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/admin";
 const userUrl = "https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/users";
 
@@ -87,8 +88,12 @@ class APIServiceInstance {
     }
 
     registerDevice = async (
-        deviceId: DeviceId,
+        deviceId: DeviceId | null,
     ) => {
+        if (!deviceId) {
+            throw new Error("Device ID is null");
+        }
+
         const raw = base64.decode(deviceId);
         let hexId = "";
         for (let i = 0; i < raw.length; i++) {
@@ -97,15 +102,36 @@ class APIServiceInstance {
         }
         console.log("id", hexId);
 
-        const response = await API.post("AdminBackend", "/register-device", {
-                body: { deviceId: hexId },
-            }).then(async (response) => {
-                console.log("Response", response);
-                await DBService.insertCloudSyncInfoForDevice(hexId, 0, response)
-                return response;
-            }).catch((e) => {
-                console.error("device registration failed", { deviceId: hexId }, e);
+        // const response = await API.post("AdminBackend", "/register-device", {
+        //         body: { deviceId: hexId },
+        //     }).then(async (response) => {
+        //         console.log("Response", response);
+        //         await DBService.insertCloudSyncInfoForDevice(hexId, 0, response)
+        //         return response;
+        //     }).catch((e) => {
+        //         console.error("device registration failed", { deviceId: hexId }, e);
+        //     });
+
+        const apiKey = fetch('http://' + localhost + ':3000/users/register', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                deviceId: hexId
+            }),
+        })
+            .then(response => response.json())
+            .then(json => {
+                DBService.insertCloudSyncInfoForDevice(hexId, 0, json.apiKey);
+                this.apiKey = json.apiKey;
+                return json.apiKey;
+            })
+            .catch(error => {
+                console.error(error);
             });
+        return apiKey;
     };
 }
 

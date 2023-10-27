@@ -25,7 +25,7 @@ const ConnectedDevice = (props: Props) => {
             <View style={styles.chevronContainer}>
               <Ionicons name={"chevron-forward"} size={20} />
             </View>
-          </View> 
+          </View>
         </Card>
       </View>
     );

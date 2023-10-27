@@ -67,7 +67,7 @@ class DBServiceInstance {
             db.transaction(
                 (tx) => {
                     tx.executeSql(
-                        "INSERT INTO readings (message, deviceId) VALUES (?, ?)",
+                        "INSERT INTO readings (message, device_id) VALUES (?, ?)",
                         [message, deviceId],
                         (_, { insertId, rows }) => {
                             resolve({
@@ -92,7 +92,7 @@ class DBServiceInstance {
             db.transaction(
                 (tx) => {
                     tx.executeSql(
-                        "SELECT * FROM readings WHERE deviceId = ? AND id > ? ORDER BY id",
+                        "SELECT * FROM readings WHERE device_id = ? AND id > ? ORDER BY id",
                         [deviceId, after],
                         (_, { rows }) => {
                             resolve(rows._array);

@@ -1,37 +1,50 @@
 import { StyleSheet, Text, View } from "react-native";
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import DevicePreview from "@BLE/components/DevicePreview";
 import CustomButton from "../../components/CustomButton";
 import PageView from "../../components/PageView";
 import { BLEService } from "@src/services/BLEService";
 import { Device } from "react-native-ble-plx";
 import { useBLEContext } from "@src/context/BLEContextProvider";
+import { AuthState } from "../authentication/AuthWrapper";
+import ErrorMessage from "@src/components/ErrorMessage";
+import CustomTextInput from "@src/components/CustomTextInput";
+import { APIService } from "@src/services/APIService";
 
 type Props = {
   device: Device;
 };
 
 const ActiveDevice = (props: Props) => {
-  const { setDevice } = useBLEContext();
+  const { device, setDevice } = useBLEContext();
+  const { isAuthenticated } = useContext(AuthState);
   const [error, setError] = useState<string | null>(null);
+  const [isRegistering, setRegistering] = useState<boolean>(false);
+  const [userId, setUserId] = useState<string>("");
 
   const registerDevice = async () => {
     setError(null);
+    setRegistering(true);
     console.log("Registering Device")
 
-    BLEService.registerDevice()
+    APIService.registerDevice(device?.id ?? null)
       .then(() => {
         console.log("registered")
+        setUserId("");
       })
       .catch((e) => {
         console.error(e)
+        setError(e.message);
+      })
+      .finally(() => {
+        setRegistering(false);
       });
   };
 
   const disconnect = async () => {
     BLEService.disconnectDevice();
     setDevice(null)
-    await BLEService.finishMonitor()
+    BLEService.finishMonitor()
   };
 
   if (!props.device) return <Text>No Active Device</Text>;
@@ -43,10 +56,41 @@ const ActiveDevice = (props: Props) => {
       <View style={styles.buttonContainer}>
         <CustomButton title="Disconnect" onPress={disconnect} />
       </View>
-      <CustomButton
-        title={"Register Device"}
-        onPress={registerDevice}
-      />
+      {isAuthenticated && device && (
+        <>
+          <Text style={{ textAlign: "center", fontSize: 18 }}>
+            {device.name
+              ? `This device is registered as ${device.name}`
+              : "This device is not registered"}
+          </Text>
+          {/* <Text style={{ fontSize: 8 }}>{BLE.device.apiKey}</Text> */}
+
+          {isRegistering ? (
+            <Text style={{ textAlign: "center", fontSize: 18, padding: 10 }}>
+              Registering
+            </Text>
+          ) : (
+            <>
+              <CustomTextInput
+                value={userId}
+                onChangeText={setUserId}
+                placeholder="User Id"
+              />
+              <CustomButton
+                title={"Register Device"}
+                onPress={registerDevice}
+              />
+              {device.name && (
+                <Text>
+                  Registering the device will assign the connected device to the
+                  new user. Do this whenever you are giving the device to a new person.
+                </Text>
+              )}
+            </>
+          )}
+          {error && <ErrorMessage error={error} />}
+        </>
+      )}
     </PageView>
   );
 };
