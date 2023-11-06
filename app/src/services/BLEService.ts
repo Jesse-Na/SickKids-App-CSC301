@@ -33,7 +33,8 @@ import {
     type Subscription
 } from 'react-native-ble-plx'
 import { PermissionsAndroid, Platform } from 'react-native'
-import { APIService } from './APIService'
+import { DEFAULT_READ_INTERVAL, DEVICE_UNIQUE_ID_CHARACTERISTIC, SECURITY_SERVICE } from '@BLE/constants'
+import { DBService } from './DBService'
 
 const deviceNotConnectedErrorText = 'Device is not connected'
 
@@ -127,6 +128,41 @@ class BLEServiceInstance {
                     device.discoverAllServicesAndCharacteristics()
                         .then(() => {
                             this.connectedDevice = device
+
+                            // Read the device's unique ID and save it to the DB cache if needed
+                            this.readCharacteristicForDevice(SECURITY_SERVICE, DEVICE_UNIQUE_ID_CHARACTERISTIC)
+                                .then(characteristic => {
+                                    const uniqueId = characteristic.value
+                                    if (uniqueId) {
+                                        // Check if the device ID is already cached
+                                        DBService.getCloudSyncInfoForBleInterfaceId(device.id)
+                                            .then(cloudSyncInfo => {
+                                                if (!cloudSyncInfo) {
+                                                    // Cache the device ID
+                                                    DBService.insertCloudSyncInfo({
+                                                        ble_interface_id: device.id,
+                                                        device_id: uniqueId,
+                                                        last_synced_id: 0,
+                                                        api_key: null,
+                                                        reading_interval: DEFAULT_READ_INTERVAL
+                                                    })
+                                                } else {
+                                                    // Update the BLE Interface ID
+                                                    DBService.updateCloudSyncInfoForDeviceId({
+                                                        ...cloudSyncInfo,
+                                                        ble_interface_id: device.id
+                                                    })
+                                                }
+                                            }).catch(error => {
+                                                console.error("Failed to get cloud sync info for device", error)
+                                            });
+                                    } else {
+                                        throw new Error("Device unique ID is null")
+                                    }
+                                }).catch(error => {
+                                    console.error("Failed to read device unique ID", error)
+                                });
+
                             resolve(device)
                         })
                         .catch(error => {

@@ -1,3 +1,4 @@
+import ReadingInterval from "@src/features/monitor/ReadingInterval";
 import * as SQLite from "expo-sqlite";
 
 const DATABASE_NAME = "sickkidspts.db";
@@ -14,9 +15,11 @@ CREATE TABLE IF NOT EXISTS readings (
 const CREATE_CLOUD_SYNC_INFO_TABLE_STATEMENT = `
 CREATE TABLE IF NOT EXISTS cloud_sync_info (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    device_id VARCHAR(20) NOT NULL,
+    ble_interface_id VARCHAR(20) UNIQUE NOT NULL,
+    device_id VARCHAR(20) UNIQUE NOT NULL,
     last_synced_id INTEGER NOT NULL,
-    api_key VARCHAR(20) NOT NULL
+    api_key VARCHAR(20),
+    reading_interval INTEGER NOT NULL
 );
 `;
 
@@ -28,10 +31,11 @@ export type Reading = {
 };
 
 export type CloudSyncInfo = {
-    id: number;
+    ble_interface_id: string;
     device_id: string;
     last_synced_id: number;
-    api_key: string;
+    api_key: string | null;
+    reading_interval: number;
 };
 
 class DBServiceInstance {
@@ -106,14 +110,14 @@ class DBServiceInstance {
         });
     };
 
-    getCloudSyncInfoForDevice = async (deviceId: string): Promise<CloudSyncInfo> => {
+    getCloudSyncInfoForBleInterfaceId = async (bleInterfaceId: string): Promise<CloudSyncInfo> => {
         const db = this.getDatabase();
         return new Promise<CloudSyncInfo>((resolve, reject) => {
             db.transaction(
                 (tx) => {
                     tx.executeSql(
-                        "SELECT * FROM cloud_sync_info WHERE device_id = ? LIMIT 1",
-                        [deviceId],
+                        "SELECT * FROM cloud_sync_info WHERE ble_interface_id = ? LIMIT 1",
+                        [bleInterfaceId],
                         (_, { rows }) => {
                             resolve(rows._array[0]);
                         }
@@ -126,14 +130,15 @@ class DBServiceInstance {
         });
     }
 
-    insertCloudSyncInfoForDevice = async (deviceId: string, lastSyncedId: number, apiKey: string) => {
+    insertCloudSyncInfo = async (cloudSyncInfo: CloudSyncInfo) => {
         const db = this.getDatabase();
+        const { ble_interface_id, device_id, last_synced_id, api_key, reading_interval } = cloudSyncInfo;
         return new Promise<void>((resolve, reject) => {
             db.transaction(
                 (tx) => {
                     tx.executeSql(
-                        "INSERT INTO cloud_sync_info (device_id, last_synced_id, api_key) VALUES (?, ?, ?)",
-                        [deviceId, lastSyncedId, apiKey],
+                        "INSERT INTO cloud_sync_info (ble_interface_id, device_id, last_synced_id, api_key, reading_interval) VALUES (?, ?, ?)",
+                        [ble_interface_id, device_id, last_synced_id, api_key, reading_interval],
                         (_, { rows }) => {
                             resolve();
                         }
@@ -146,14 +151,15 @@ class DBServiceInstance {
         });
     }
 
-    updateCloudSyncInfoForDevice = async (deviceId: string, lastSyncedId: number, apiKey: string) => {
+    updateCloudSyncInfoForDeviceId = async (cloudSyncInfo: CloudSyncInfo) => {
         const db = this.getDatabase();
+        const { ble_interface_id, last_synced_id, api_key, reading_interval, device_id } = cloudSyncInfo;
         return new Promise<void>((resolve, reject) => {
             db.transaction(
                 (tx) => {
                     tx.executeSql(
-                        "UPDATE cloud_sync_info SET last_synced_id = ?, api_key = ? WHERE device_id = ?",
-                        [lastSyncedId, apiKey, deviceId],
+                        "UPDATE cloud_sync_info SET ble_interface_id = ?, last_synced_id = ?, api_key = ?, reading_interval = ? WHERE device_id = ?",
+                        [ble_interface_id, last_synced_id, api_key, reading_interval, device_id],
                         (_, { rows }) => {
                             resolve();
                         }

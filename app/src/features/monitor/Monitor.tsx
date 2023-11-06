@@ -66,24 +66,48 @@ const Monitor = ({ navigation }: Props) => {
 
     setDevice(device);
 
-    const apiKey = APIService.getApiKey();
-    // if (!apiKey) {
-    //   console.log("not registered");
-    //   setApiKeyError(
-    //     "This device has not been registered, please contact an admin to enable it"
-    //   );
-    // } else {
-    //   refreshDevice();
-    // }
+    // Get the API key for this device
+    DBService.getCloudSyncInfoForBleInterfaceId(device.id).then((info) => {
+      if (info) {
+        setApiKey(info.api_key);
+      }
+    }).catch((e) => {
+      console.error(e)
+    });
+
+    if (!apiKey) {
+      console.log("not registered");
+      setApiKeyError(
+        "This device has not been registered, please contact an admin to enable it"
+      );
+    } else {
+      refreshDevice();
+    }
 
     BLEService.setupMonitor(
       DATA_USAGE_SERVICE,
       DATA_CHARACTERISTIC,
       async (characteristic) => {
         if (characteristic.value) {
-          decodeDataCharacteristic(characteristic.value);
-          await DBService.saveReading(characteristic.value, "4C4493");
-          await APIService.syncToCloudForDevice("4C4493");
+          // TEMPORARY: make a read every time we get a notification
+          BLEService.readCharacteristicForDevice(
+            DATA_USAGE_SERVICE,
+            DATA_CHARACTERISTIC
+          ).then((characteristic) => {
+            if (characteristic.value) {
+              decodeDataCharacteristic(characteristic.value);
+              return characteristic.value;
+            }
+
+            return null;
+          }).then((characteristicValue) => {
+            if (characteristicValue === null) return;
+
+            DBService.saveReading(characteristicValue, "4C4493");
+            APIService.syncToCloudForDevice("4C4493");
+          }).catch((e) => {
+            console.error(e)
+          });
         }
       },
       async (error) => {
@@ -97,9 +121,11 @@ const Monitor = ({ navigation }: Props) => {
 
   const refreshDevice = async () => {
     try {
-      const resp = await APIService.getReadingInterval();
-      setReadingInterval(parseInt(resp));
-      setApiKeyError(null);
+      if (device) {
+        const resp = await APIService.getReadingInterval(device.id);
+        setReadingInterval(parseInt(resp));
+        setApiKeyError(null);
+      }
     } catch (e: any) {
       if (e.response.status === 401) {
         setApiKeyError(

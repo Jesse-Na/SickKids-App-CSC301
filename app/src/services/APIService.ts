@@ -20,10 +20,10 @@ export const AmplifyConfig = {
                 endpoint: adminUrl,
                 custom_header: async () => {
                     const token = (await Auth.currentSession())
-                      .getIdToken()
-                      .getJwtToken();
+                        .getIdToken()
+                        .getJwtToken();
                     return { Authorization: `Bearer ${token}` };
-                  },
+                },
             },
             {
                 name: "UserBackend",
@@ -44,7 +44,9 @@ class APIServiceInstance {
         return this.apiKey;
     }
 
-    getReadingInterval() {
+    getReadingInterval = async (bleInterfaceId: string) => {
+        const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
+
         const interval = API.get("UserBackend", "/interval", {
             queryStringParameters: {
                 apiKey: this.apiKey,
@@ -58,43 +60,44 @@ class APIServiceInstance {
         return interval;
     }
 
-    syncToCloudForDevice = async (deviceId: string) => {
-        console.log("syncing to cloud", deviceId);
-        try {
-            const cloudSyncInfo = await DBService.getCloudSyncInfoForDevice(deviceId);
-            const readings = await DBService.getReadings(deviceId, cloudSyncInfo.last_synced_id);
+    syncToCloudForDevice = async (bleInterfaceId: string) => {
+        console.log("syncing to cloud", bleInterfaceId);
 
-            const readingInterval = API.post("UserBackend", "/readings", {
-                body: readings.map((r) => ({
-                    synced: r.synced,
-                    message: r.message,
-                })),
-                queryStringParameters: {
-                    apiKey: this.apiKey,
-                },
-            })
-                .then(async ({ interval }) => {
-                    await DBService.updateCloudSyncInfoForDevice(deviceId, readings[readings.length - 1].id, cloudSyncInfo.api_key);
-                    return interval;
-                })
-                .catch((e) => {
-                    console.error("failed to sync", e);
+        const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
+        const readings = await DBService.getReadings(cloudSyncInfo.device_id, cloudSyncInfo.last_synced_id);
+
+        API.post("UserBackend", "/readings", {
+            body: readings.map((r) => ({
+                synced: r.synced,
+                message: r.message,
+            })),
+            queryStringParameters: {
+                apiKey: this.apiKey,
+            },
+        })
+            .then(async ({ interval }) => {
+                await DBService.updateCloudSyncInfoForDeviceId({
+                    ...cloudSyncInfo,
+                    last_synced_id: readings[readings.length - 1].id,
+                    reading_interval: interval
                 });
-
-        } catch (e) {
-            console.log("failed to sync", e);
-            return;
-        }
+                return interval;
+            })
+            .catch((e) => {
+                console.error("failed to sync", e);
+            });
     }
 
     registerDevice = async (
-        deviceId: DeviceId | null,
+        bleInterfaceId: DeviceId | null,
     ) => {
-        if (!deviceId) {
+        if (!bleInterfaceId) {
             throw new Error("Device ID is null");
         }
 
-        const raw = base64.decode(deviceId);
+        const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
+
+        const raw = base64.decode(cloudSyncInfo.device_id);
         let hexId = "";
         for (let i = 0; i < raw.length; i++) {
             const hex = raw.charCodeAt(i).toString(16).toUpperCase();
@@ -124,7 +127,10 @@ class APIServiceInstance {
         })
             .then(response => response.json())
             .then(json => {
-                DBService.insertCloudSyncInfoForDevice(hexId, 0, json.apiKey);
+                DBService.updateCloudSyncInfoForDeviceId({
+                    ...cloudSyncInfo,
+                    api_key: json.apiKey
+                });
                 this.apiKey = json.apiKey;
                 return json.apiKey;
             })
