@@ -6,7 +6,7 @@ import Device from "../database/device.entity";
 import Reading from "../database/reading.entity";
 import { getDeviceFromApiKey } from "../utils/device.utils";
 import dotenv from "dotenv";
-import UserDeviceUsage from "../database/user-device.entity";
+import PatientDeviceHistory from "../database/patient-device-history.entity";
 import Patient from "../database/patient.entity";
 import moment from "moment";
 import {
@@ -51,7 +51,7 @@ app.get("/admin/devices", async function (req, res) {
         lastSynced:
           device.readings.length > 0 ? device.readings[0].deviceSynced : null,
         lastReset: device.createdAt,
-        user: device.users.length > 0 ? device.users[0].patient.id : null,
+        user: device.patientHistory.length > 0 ? device.patientHistory[0].patient.id : null,
       }))
     );
   } catch (e) {
@@ -87,7 +87,7 @@ app.get("/admin/device/:deviceId", async function (req, res) {
       lastSynced:
         device.readings.length > 0 ? device.readings[0].deviceSynced : null,
       lastReset: device.createdAt,
-      user: device.users.length > 0 ? device.users[0].patient.id : null,
+      user: device.patientHistory.length > 0 ? device.patientHistory[0].patient.id : null,
     };
 
     res.send(formattedDevice);
@@ -133,13 +133,13 @@ app.delete("/admin/device/:deviceId", async function (req, res) {
   const db = await getDatabase();
   const device = await db.getRepository(Device).findOne({
     where: { id: req.params.deviceId },
-    relations: { users: { patient: true } },
+    relations: { patientHistory: { patient: true } },
   });
 
   if (!device) return res.status(400).send("No device found");
-  const activeUser = device.users?.find((user) => user.removed === null);
+  const activeUser = device.patientHistory?.find((user) => user.removed === null);
   if (activeUser) {
-    await db.getRepository(UserDeviceUsage).delete({
+    await db.getRepository(PatientDeviceHistory).delete({
       id: activeUser.id,
     });
   }
@@ -174,31 +174,35 @@ app.post("/admin/register-device", async function (req, res) {
     device.interval = interval;
   }
   await db.getRepository(Device).save(device);
-  //get the singular api key stored in the db
+  // Get the singular api key stored in the db
   const apiKey = await getOrCreateAPIKey();
-  //link to user and disable any old user
-  const activeUser = device.users?.find((u) => u.removed === null);
-  //create patient if not exists
+  // If there exists an active user associated with this device, we find it here by looking for a user that isn't "removed"
+  const activeUser = device.patientHistory?.find((u) => u.removed === null);
+  // Here, we create the patient entity for this patient if it does not already exist
   const patient = await getOrRegisterPatient(userId);
 
-  //remove active user if exists and is not the same
+  // If an active user exists and the patient we want to register the device to doesn't, or the patient 
+  // and active user aren't the same, we set the existing active user entry to "removed"
   if (
     (!patient && activeUser) ||
     (patient && activeUser && activeUser.patient.id !== userId)
   ) {
     console.log("removing active user");
     activeUser.removed = new Date();
-    await db.getRepository(UserDeviceUsage).save(activeUser);
+    await db.getRepository(PatientDeviceHistory).save(activeUser);
   }
 
-  //add new patient if exists and is not already active
+  // If there was no existing active user, or the active user was not the patient we want to register the device to,
+  // we create a new patient device history entity for our patient and device which we save to the DB
   if (!activeUser || patient.id != activeUser.patient.id) {
     console.log("adding new user");
-    const newUser = db.getRepository(UserDeviceUsage).create({
+    // Note that if the patient device combo already exists in PatientDeviceHistory, this updates the "removed" field
+    // to be null (default), so there will never be duplicate patient device combos in PatientDeviceHistory
+    const newUser = db.getRepository(PatientDeviceHistory).create({
       patient,
       device,
     });
-    await db.getRepository(UserDeviceUsage).save(newUser);
+    await db.getRepository(PatientDeviceHistory).save(newUser);
   }
 
   console.log("sending user the api key", apiKey);

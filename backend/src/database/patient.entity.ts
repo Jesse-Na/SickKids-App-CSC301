@@ -1,5 +1,5 @@
 import { CreateDateColumn, Entity, OneToMany, PrimaryColumn } from "typeorm";
-import UserDeviceUsage from "./user-device.entity";
+import PatientDeviceHistory from "./patient-device-history.entity";
 import PatientReport from "./patient-reports.entity";
 
 @Entity()
@@ -11,10 +11,10 @@ export default class Patient {
   createdAt: Date;
 
   @OneToMany(
-    () => UserDeviceUsage,
+    () => PatientDeviceHistory,
     (userDeviceUsage) => userDeviceUsage.patient
   )
-  deviceUsages: UserDeviceUsage[];
+  deviceUsages: PatientDeviceHistory[];
 
   @OneToMany(() => PatientReport, (report) => report.patient)
   reports: PatientReport[];

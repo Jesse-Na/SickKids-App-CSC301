@@ -9,7 +9,7 @@ import Device from "./device.entity";
 import Patient from "./patient.entity";
 
 @Entity()
-export default class UserDeviceUsage {
+export default class PatientDeviceHistory {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -22,6 +22,6 @@ export default class UserDeviceUsage {
   @ManyToOne(() => Patient, (patient) => patient.deviceUsages)
   patient: Patient;
 
-  @ManyToOne(() => Device, (device) => device.users)
+  @ManyToOne(() => Device, (device) => device.patientHistory)
   device: Device;
 }

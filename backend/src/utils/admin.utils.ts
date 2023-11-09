@@ -22,7 +22,7 @@ export const getOrCreateDevice = async (deviceId: string) => {
   const db = await getDatabase();
   const device = await db.getRepository(Device).findOne({
     where: { id: deviceId },
-    relations: { users: { patient: true } },
+    relations: { patientHistory: { patient: true } },
   });
   if (device) return device;
   const newDevice = db.getRepository(Device).create({

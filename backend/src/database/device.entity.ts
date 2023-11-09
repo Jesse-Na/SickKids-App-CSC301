@@ -6,7 +6,7 @@ import {
   PrimaryColumn,
 } from "typeorm";
 import Reading from "./reading.entity";
-import UserDeviceUsage from "./user-device.entity";
+import PatientDeviceHistory from "./patient-device-history.entity";
 
 @Entity()
 export default class Device {
@@ -22,8 +22,8 @@ export default class Device {
   @CreateDateColumn()
   createdAt: Date;
 
-  @OneToMany(() => UserDeviceUsage, (userDevice) => userDevice.device)
-  users: UserDeviceUsage[];
+  @OneToMany(() => PatientDeviceHistory, (userDevice) => userDevice.device)
+  patientHistory: PatientDeviceHistory[];
 
   @OneToMany(() => Reading, (reading) => reading.device)
   readings: Reading[];
