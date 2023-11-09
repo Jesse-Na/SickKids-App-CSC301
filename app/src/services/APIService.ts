@@ -47,10 +47,21 @@ class APIServiceInstance {
     getReadingInterval = async (bleInterfaceId: string) => {
         const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
 
+        const raw = base64.decode(cloudSyncInfo.device_id);
+        let hexId = "";
+        for (let i = 0; i < raw.length; i++) {
+            const hex = raw.charCodeAt(i).toString(16).toUpperCase();
+            hexId += hex.length === 2 ? hex : "0" + hex;
+        }
+        console.log("id", hexId);
+
         const interval = API.get("UserBackend", "/interval", {
             queryStringParameters: {
                 apiKey: this.apiKey,
             },
+            body: JSON.stringify({
+                deviceId: hexId
+            }),
         })
             .then((interval) => {
                 return interval;
@@ -66,10 +77,20 @@ class APIServiceInstance {
         const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
         const readings = await DBService.getReadings(cloudSyncInfo.device_id, cloudSyncInfo.last_synced_id);
 
+        const raw = base64.decode(cloudSyncInfo.device_id);
+        let hexId = "";
+        for (let i = 0; i < raw.length; i++) {
+            const hex = raw.charCodeAt(i).toString(16).toUpperCase();
+            hexId += hex.length === 2 ? hex : "0" + hex;
+        }
+        console.log("id", hexId);
+
         API.post("UserBackend", "/readings", {
             body: readings.map((r) => ({
                 synced: r.synced,
                 message: r.message,
+            }), JSON.stringify({
+                deviceId: hexId
             })),
             queryStringParameters: {
                 apiKey: this.apiKey,
