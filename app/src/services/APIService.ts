@@ -3,7 +3,6 @@ import base64 from "react-native-base64";
 import { DeviceId } from "react-native-ble-plx";
 import { DBService } from "./DBService";
 
-const localhost = "192.168.88.156"
 const adminUrl = "https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/admin";
 const userUrl = "https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/users";
 
@@ -126,17 +125,7 @@ class APIServiceInstance {
         }
         console.log("id", hexId);
 
-        // const response = await API.post("AdminBackend", "/register-device", {
-        //         body: { deviceId: hexId },
-        //     }).then(async (response) => {
-        //         console.log("Response", response);
-        //         await DBService.insertCloudSyncInfoForDevice(hexId, 0, response)
-        //         return response;
-        //     }).catch((e) => {
-        //         console.error("device registration failed", { deviceId: hexId }, e);
-        //     });
-
-        const apiKey = fetch('http://' + localhost + ':3000/users/register', {
+        const apiKey = await API.post("AdminBackend", "/register-device", {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -148,6 +137,7 @@ class APIServiceInstance {
         })
             .then(response => response.json())
             .then(json => {
+                console.log("Device registration response: ", json)
                 DBService.updateCloudSyncInfoForDeviceId({
                     ...cloudSyncInfo,
                     api_key: json.apiKey
@@ -155,8 +145,8 @@ class APIServiceInstance {
                 this.apiKey = json.apiKey;
                 return json.apiKey;
             })
-            .catch(error => {
-                console.error(error);
+            .catch((error) => {
+                console.error("device registration failed", hexId, error);
             });
         return apiKey;
     };
