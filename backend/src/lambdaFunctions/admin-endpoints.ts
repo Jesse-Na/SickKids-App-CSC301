@@ -181,7 +181,7 @@ app.post("/admin/register-device", async function (req, res) {
   // Here, we create the patient entity for this patient if it does not already exist
   const patient = await getOrRegisterPatient(userId);
 
-  // If an active user exists and the patient we want to register the device to doesn't, or the patient 
+  // If an active user exists and the patient we want to register the device to doesn't, or the patient
   // and active user aren't the same, we set the existing active user entry to "removed"
   if (
     (!patient && activeUser) ||

@@ -35,14 +35,14 @@ export const getOrCreateDevice = async (deviceId: string) => {
 
 export const getOrCreateAPIKey = async () => {
   const db = await getDatabase();
-  
+
   if (await db.getRepository(APIKey).count() == 0) {
     const newKeyEntity = db.getRepository(APIKey).create({});
     await db.getRepository(APIKey).save(newKeyEntity);
-  }  
+  }
 
-  const apiKeyEntity = await db.getRepository(APIKey).findOne({
+  const apiKeyEntities = await db.getRepository(APIKey).find({
     order: { createdAt: "DESC"}
   });
-  return apiKeyEntity.apiKeyValue
+  return apiKeyEntities[0].apiKeyValue
 };

@@ -6,9 +6,10 @@ import { hash } from "./hashing";
 export const getDeviceFromApiKey = async (apiKey: string) => {
   console.log("api key", { apiKey, hashed: hash(apiKey) });
   const db = await getDatabase();
-  return await db.getRepository(Device).findOne({
-    where: { apiKey: { hashedKey: hash(apiKey) } },
-  });
+  // return await db.getRepository(Device).findOne({
+  //   where: { apiKey: { hashedKey: hash(apiKey) } },
+  // });
+  return null;
 };
 
 export const getCurrentPatientFromDevice = async (deviceId: string) => {
