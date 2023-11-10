@@ -27,7 +27,7 @@ const ActiveDevice = (props: Props) => {
     setRegistering(true);
     console.log("Registering Device")
 
-    APIService.registerDevice(device?.id ?? null)
+    APIService.registerDevice(device?.id ?? null, userId)
       .then(() => {
         console.log("registered")
         setUserId("");

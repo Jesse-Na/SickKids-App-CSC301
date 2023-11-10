@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS readings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     synced TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     device_id VARCHAR(20) NOT NULL,
-    message VARCHAR(20) NOT NULL
+    message VARCHAR(200) NOT NULL
 );
 `;
 
@@ -110,6 +110,26 @@ class DBServiceInstance {
         });
     };
 
+    getCloudSyncInfoForDeviceId = async (deviceId: string): Promise<CloudSyncInfo> => {
+        const db = this.getDatabase();
+        return new Promise<CloudSyncInfo>((resolve, reject) => {
+            db.transaction(
+                (tx) => {
+                    tx.executeSql(
+                        "SELECT * FROM cloud_sync_info WHERE device_id = ? LIMIT 1",
+                        [deviceId],
+                        (_, { rows }) => {
+                            resolve(rows._array[0]);
+                        }
+                    );
+                },
+                (e) => {
+                    reject(e);
+                }
+            );
+        });
+    }
+
     getCloudSyncInfoForBleInterfaceId = async (bleInterfaceId: string): Promise<CloudSyncInfo> => {
         const db = this.getDatabase();
         return new Promise<CloudSyncInfo>((resolve, reject) => {
@@ -137,7 +157,7 @@ class DBServiceInstance {
             db.transaction(
                 (tx) => {
                     tx.executeSql(
-                        "INSERT INTO cloud_sync_info (ble_interface_id, device_id, last_synced_id, api_key, reading_interval) VALUES (?, ?, ?)",
+                        "INSERT INTO cloud_sync_info (ble_interface_id, device_id, last_synced_id, api_key, reading_interval) VALUES (?, ?, ?, ?, ?)",
                         [ble_interface_id, device_id, last_synced_id, api_key, reading_interval],
                         (_, { rows }) => {
                             resolve();

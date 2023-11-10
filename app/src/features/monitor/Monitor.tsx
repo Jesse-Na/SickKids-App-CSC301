@@ -15,15 +15,22 @@ import { DATA_CHARACTERISTIC, DATA_USAGE_SERVICE } from "@BLE/constants";
 import base64 from "react-native-base64";
 import { DBService } from "@src/services/DBService";
 import { Buffer } from "buffer";
-import { useBLEContext, defaultDeviceProperties } from "@src/context/BLEContextProvider";
+import {
+  useBLEContext,
+  defaultDeviceProperties,
+} from "@src/context/BLEContextProvider";
 type Props = NativeStackScreenProps<DeviceStackParamList, "Monitor">;
 
 const Monitor = ({ navigation }: Props) => {
-  const { device, setDevice, deviceProperties, setDeviceProperties } = useBLEContext();
-  const { batteryLevel, isCharging, heartRate } = deviceProperties || defaultDeviceProperties;
+  const { device, setDevice, deviceProperties, setDeviceProperties } =
+    useBLEContext();
+  const { batteryLevel, isCharging, heartRate } =
+    deviceProperties || defaultDeviceProperties;
 
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState<string | null>(null);
+  const [deviceUniqueId, setDeviceUniqueId] = useState<string | null>(null);
+  const [isMonitoring, setMonitoring] = useState<boolean>(false);
 
   const combineBytes = (bytes: Buffer, from: number, to: number) => {
     return bytes.subarray(from, to).reduce((a, p) => 256 * a + p, 0);
@@ -48,7 +55,7 @@ const Monitor = ({ navigation }: Props) => {
       ? decoded.charCodeAt(8)
       : 0;
 
-    console.log("monitior.tsx", heartRate)
+    console.log("monitior.tsx", heartRate);
     setDeviceProperties("heartRate", heartRate);
 
     const isCharging: number = !Number.isNaN(decoded.charCodeAt(7))
@@ -66,22 +73,31 @@ const Monitor = ({ navigation }: Props) => {
 
     setDevice(device);
 
-    // Get the API key for this device
-    DBService.getCloudSyncInfoForBleInterfaceId(device.id).then((info) => {
-      if (info) {
-        setApiKey(info.api_key);
-      }
-    }).catch((e) => {
-      console.error(e)
-    });
+    if (!apiKey || !deviceUniqueId) {
+      // Get the API key and unique device ID for this device
+      DBService.getCloudSyncInfoForBleInterfaceId(device.id)
+      .then((info) => {
+        if (info.api_key && info.device_id) {
+          setDeviceUniqueId(info.device_id);
+          setApiKey(info.api_key);
+        } else {
+          console.log("not registered");
+          setApiKeyError(
+            "This device has not been registered, please contact an admin to enable it"
+          );
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+      });
 
-    if (!apiKey) {
-      console.log("not registered");
-      setApiKeyError(
-        "This device has not been registered, please contact an admin to enable it"
-      );
+      return;
     } else {
       refreshDevice();
+    }
+
+    if (isMonitoring) {
+      return;
     }
 
     BLEService.setupMonitor(
@@ -89,35 +105,20 @@ const Monitor = ({ navigation }: Props) => {
       DATA_CHARACTERISTIC,
       async (characteristic) => {
         if (characteristic.value) {
-          // TEMPORARY: make a read every time we get a notification
-          BLEService.readCharacteristicForDevice(
-            DATA_USAGE_SERVICE,
-            DATA_CHARACTERISTIC
-          ).then((characteristic) => {
-            if (characteristic.value) {
-              decodeDataCharacteristic(characteristic.value);
-              return characteristic.value;
-            }
-
-            return null;
-          }).then((characteristicValue) => {
-            if (characteristicValue === null) return;
-
-            DBService.saveReading(characteristicValue, "4C4493");
-            APIService.syncToCloudForDevice("4C4493");
-          }).catch((e) => {
-            console.error(e)
-          });
+          decodeDataCharacteristic(characteristic.value);
+          DBService.saveReading(characteristic.value, deviceUniqueId);
+          APIService.syncToCloudForDevice(device.id);
         }
       },
       async (error) => {
         console.error(error);
+        setMonitoring(false);
         BLEService.finishMonitor();
       }
     );
-  }, [device]);
+  }, [device, apiKey, deviceUniqueId]);
 
-  const setReadingInterval = async (interval: number) => { };
+  const setReadingInterval = async (interval: number) => {};
 
   const refreshDevice = async () => {
     try {
