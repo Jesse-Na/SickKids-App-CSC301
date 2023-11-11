@@ -214,25 +214,25 @@ class BLEServiceInstance {
                 })
         })
 
-    writeCharacteristicWithResponseForDevice = async (serviceUUID: UUID, characteristicUUID: UUID, time: Base64) => {
+    writeCharacteristicWithResponseForDevice = async (serviceUUID: UUID, characteristicUUID: UUID, value: Base64) => {
         if (!this.connectedDevice) {
             console.error(deviceNotConnectedErrorText)
             throw new Error(deviceNotConnectedErrorText)
         }
         return this.manager
-            .writeCharacteristicWithResponseForDevice(this.connectedDevice.id, serviceUUID, characteristicUUID, time)
+            .writeCharacteristicWithResponseForDevice(this.connectedDevice.id, serviceUUID, characteristicUUID, value)
             .catch(error => {
                 this.onError(error)
             })
     }
 
-    writeCharacteristicWithoutResponseForDevice = async (serviceUUID: UUID, characteristicUUID: UUID, time: Base64) => {
+    writeCharacteristicWithoutResponseForDevice = async (serviceUUID: UUID, characteristicUUID: UUID, value: Base64) => {
         if (!this.connectedDevice) {
             console.error(deviceNotConnectedErrorText)
             throw new Error(deviceNotConnectedErrorText)
         }
         return this.manager
-            .writeCharacteristicWithoutResponseForDevice(this.connectedDevice.id, serviceUUID, characteristicUUID, time)
+            .writeCharacteristicWithoutResponseForDevice(this.connectedDevice.id, serviceUUID, characteristicUUID, value)
             .catch(error => {
                 this.onError(error)
             })

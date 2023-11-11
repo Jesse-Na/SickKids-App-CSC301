@@ -76,7 +76,7 @@ class APIServiceInstance {
 
         const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
         const readings = await DBService.getReadings(cloudSyncInfo.device_id, cloudSyncInfo.last_synced_id);
-        const hexId = this.base64Encode(cloudSyncInfo.device_id);
+        const hexId = this.hexadecimalSum(cloudSyncInfo.device_id);
         console.log("id", hexId);
 
         API.post("UserBackend", "/readings", {
@@ -113,7 +113,7 @@ class APIServiceInstance {
         }
 
         const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
-        const hexId = this.base64Encode(cloudSyncInfo.device_id);
+        const hexId = this.hexadecimalSum(cloudSyncInfo.device_id);
         console.log("id", hexId);
 
         const apiKey = await API.post("AdminBackend", "/register-device", {
@@ -143,7 +143,7 @@ class APIServiceInstance {
         return apiKey;
     };
 
-    base64Encode = (str: string) => {
+    hexadecimalSum = (str: string) => {
         const raw = base64.decode(str);
         let hexId = "";
         for (let i = 0; i < raw.length; i++) {
