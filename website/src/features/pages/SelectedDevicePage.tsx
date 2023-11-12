@@ -11,6 +11,16 @@ import DisableDevicePopup from "../selectedDevice/DisableDevicePopup";
 
 type Props = {};
 
+// const dummyDevice: Device = {
+//   id: "test",
+//   name: "Test Device",
+//   lastSynced: "2021-10-15T19:00:00.000Z",
+//   lastReset: "2021-10-15T19:00:00.000Z",
+//   interval: 1000 * 60 * 60 * 24,
+//   user: "test user",
+//   frequency: 1,
+// };
+
 export default function SelectedDevicePage({}: Props) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -59,41 +69,68 @@ export default function SelectedDevicePage({}: Props) {
   return (
     <div>
       <h1>{device.name}</h1>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => setEditDevicePopupOpen(true)}
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          marginBottom: 10,
+        }}
       >
-        Edit Device
-      </Button>
-      {(device.lastReset !== null || !hasReadings) && (
         <Button
           variant="contained"
-          color="error"
-          onClick={() => setDisableDevicePopupOpen(true)}
+          color="primary"
+          onClick={() => setEditDevicePopupOpen(true)}
+          sx={{ margin: 1 }}
         >
-          {hasReadings ? "Disable Device" : "Delete Device"}
+          Edit Device
         </Button>
-      )}
-      <div style={{ textAlign: "center" }}>
-        Last Synced: {formatTime(device.lastSynced, "Never Synced")}
+
+        {(device.lastReset !== null || !hasReadings) && (
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => setDisableDevicePopupOpen(true)}
+            sx={{ margin: 1 }}
+          >
+            {hasReadings ? "Disable Device" : "Delete Device"}
+          </Button>
+        )}
       </div>
-      <div style={{ textAlign: "center" }}>
-        Last Reset: {formatTime(device.lastReset, "Disabled")}
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          flexDirection: "row",
+          marginBottom: 20,
+        }}
+      >
+        <div style={{ margin: "0 10px", color: "blue" }}>
+          Last Synced: {formatTime(device.lastSynced, "Never Synced")}
+        </div>
+        <div style={{ margin: "0 10px", color: "blue" }}>
+          Last Reset: {formatTime(device.lastReset, "Disabled")}
+        </div>
+        <div style={{ margin: "0 10px", color: "blue" }}>
+          Reading Interval: {convertMsToString(device.interval)}
+        </div>
       </div>
-      <div style={{ textAlign: "center" }}>
-        Reading Interval: {convertMsToString(device.interval)}
-      </div>
+
       <DeviceDataTable
         deviceId={device.id}
         clearLastSynced={() => setNewDevice({ ...device, lastSynced: null })}
       />
+
       <EditDevicePopup
         device={device}
         setDevice={setNewDevice}
         open={editDevicePopupOpen}
         handleClose={() => setEditDevicePopupOpen(false)}
       />
+
       <DisableDevicePopup
         hasReadings={hasReadings}
         device={device}

@@ -1,6 +1,5 @@
-
 describe("My First Cypress Test", () => {
-  it("Visits the website and test frequency change", () => {
+  it("Visits the website and test patient table", () => {
 
     // Visit the website
     cy.visit("https://test-7a901.web.app/device/1FFF7590");
@@ -16,19 +15,13 @@ describe("My First Cypress Test", () => {
     // click sign in
     cy.get(':nth-child(4) > .MuiButtonBase-root').click();
     
-    // click device button
-    cy.get('[style="display: flex; padding-left: 60px;"] > :nth-child(1)').click();
+    // click patients button
+    cy.get('[style="display: flex; padding-left: 60px;"] > :nth-child(3)').click();
 
-    // click first device
-    cy.get('.MuiTableBody-root > :nth-child(1) > :nth-child(1)').click();
-    
-    // click edit button
-    cy.get('.App > :nth-child(2) > :nth-child(2)').click();
-    
-    // change frequency
-    cy.get('#\\:r1n\\:').type("1");
+    // search for patient
+    cy.get('#input-with-icon-textfield').type("pt-1");
 
-    // click save button
-    cy.get('.MuiDialogActions-root > :nth-child(2)').click();
+    // click patient
+    cy.get('.MuiTableBody-root > .MuiTableRow-root > :nth-child(1)').click();
   });
 });

@@ -115,9 +115,20 @@ export default function ReadingTable({ data, reload, fileId }: Props) {
           setSelected(newSelection as number[]);
         }}
       />
-      <Button variant="contained" color="primary" onClick={exportCSV}>
-        Export to CSV
-      </Button>
+
+      <div
+        style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}
+      >
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={exportCSV}
+          style={{ marginTop: "20px" }} // You can also apply the margin directly to the button if preferred
+        >
+          Export to CSV
+        </Button>
+      </div>
+
       {selected.length > 0 && (
         <Button variant="contained" color="error" onClick={deleteSelectedRows}>
           Delete Selected Rows
