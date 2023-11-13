@@ -1,4 +1,3 @@
-import ReadingInterval from "@src/features/monitor/ReadingInterval";
 import * as SQLite from "expo-sqlite";
 
 const DATABASE_NAME = "sickkidspts.db";
@@ -24,18 +23,18 @@ CREATE TABLE IF NOT EXISTS cloud_sync_info (
 `;
 
 export type Reading = {
-    id: number;
-    synced: string;
-    device_id: string;
-    message: string;
+    id: number; // internal id used by database
+    synced: string; // ISO string
+    device_id: string; // base64 unique id of the device
+    message: string; // raw sensor sample from the device, stream of bytes in base64
 };
 
 export type CloudSyncInfo = {
-    ble_interface_id: string;
-    device_id: string;
-    last_synced_id: number;
-    api_key: string | null;
-    reading_interval: number;
+    ble_interface_id: string; // MAC address of the BLE interface if Android and UUID if iOS
+    device_id: string; // base64 unique id of the device
+    last_synced_id: number; // internal id of the last synced reading
+    api_key: string | null; // device's api key used to authenticate with the backend
+    reading_interval: number; // device's reading interval in seconds
 };
 
 class DBServiceInstance {

@@ -34,16 +34,11 @@ export const AmplifyConfig = {
 };
 
 class APIServiceInstance {
-    apiKey: string | null = null;
-
     constructor() {
         Amplify.configure(AmplifyConfig)
     }
 
-    getApiKey() {
-        return this.apiKey;
-    }
-
+    // Get reading interval from backend and update cloudSyncInfo table with new interval
     getReadingInterval = async (bleInterfaceId: string) => {
         const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
 
@@ -78,6 +73,7 @@ class APIServiceInstance {
         return interval;
     }
 
+    // Upload readings to backend and update cloudSyncInfo table with last synced id
     syncToCloudForDevice = async (bleInterfaceId: string) => {
         const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
         const readings = await DBService.getReadings(cloudSyncInfo.device_id, cloudSyncInfo.last_synced_id);
@@ -109,6 +105,8 @@ class APIServiceInstance {
             });
     }
 
+    // Register device with backend and update cloudSyncInfo table with api key
+    // NOTE: The api key should be written to the device using BLEService after this function is called
     registerDevice = async (
         bleInterfaceId: DeviceId | null,
         userId: string
@@ -135,11 +133,11 @@ class APIServiceInstance {
         })
             .then(response => {
                 console.log("Device registration response: ", response)
+
                 DBService.updateCloudSyncInfoForDeviceId({
                     ...cloudSyncInfo,
                     api_key: response
                 });
-                this.apiKey = response;
                 return response;
             })
             .catch((error) => {

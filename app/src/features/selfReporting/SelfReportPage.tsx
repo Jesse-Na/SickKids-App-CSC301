@@ -18,13 +18,15 @@ import {
   removeReport,
 } from "./selfReporting.utils";
 import { API } from "aws-amplify";
-import { APIService } from "@src/services/APIService";
+import { DBService } from "@src/services/DBService";
+import { useBLEContext } from "@src/context/BLEContextProvider";
 
 type Props = {
   goToDeviceSelect: () => void;
 };
 
 const SelfReportPage = (props: Props) => {
+  const { device } = useBLEContext();
   const [selectedDate, setSelectedDate] = useState<moment.Moment>(moment());
   const [reports, setReports] = useState<UsageReport[]>([]);
   const [hours, setHours] = useState("");
@@ -45,10 +47,25 @@ const SelfReportPage = (props: Props) => {
   };
 
   useEffect(() => {
-    reloadReports();
+    if (!device) {
+      return;
+    }
 
-    setApiKey(APIService.getApiKey());
-  }, [APIService.getApiKey()]);
+    // Get the API Key for the device
+    DBService.getCloudSyncInfoForBleInterfaceId(device.id)
+      .then((info) => {
+        if (info.api_key && info.device_id) {
+          setApiKey(info.api_key);
+        } else {
+          console.log("not registered");
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+
+    reloadReports();
+  }, [device]);
 
   const hoursError = useMemo(() => {
     if (hours === "") return false;

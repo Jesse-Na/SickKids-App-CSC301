@@ -55,6 +55,7 @@ class BLEServiceInstance {
 
     getConnectedDevice = () => this.connectedDevice
 
+    // Initialize the BLE manager by enabling BLE and requesting permissions
     initializeBLE = () =>
         new Promise<void>(resolve => {
             const subscription = this.manager.onStateChange(state => {
@@ -119,11 +120,12 @@ class BLEServiceInstance {
         this.manager.stopDeviceScan()
     }
 
-    connectToDevice = (deviceId: string) =>
+    // Connect to a device with the given BLE interface ID so that we can read and write to its characteristics
+    // Also, cache the cloud sync info for the device if it is not already cached or update it if it is
+    connectToDevice = (bleInterfaceId: string) =>
         new Promise<Device>((resolve, reject) => {
-            this.stopDeviceScan()
             this.manager
-                .connectToDevice(deviceId)
+                .connectToDevice(bleInterfaceId)
                 .then(device => {
                     device.discoverAllServicesAndCharacteristics()
                         .then(() => {
@@ -132,21 +134,21 @@ class BLEServiceInstance {
                             // Read the device's unique ID
                             this.readCharacteristicForDevice(SECURITY_SERVICE, DEVICE_UNIQUE_ID_CHARACTERISTIC)
                                 .then(characteristic => {
-                                    const uniqueId = characteristic.value
-                                    if (uniqueId) {
+                                    const deviceId = characteristic.value
+                                    if (deviceId) {
                                         // Check if the information the device needs to sync to the cloud is already cached
-                                        DBService.getCloudSyncInfoForDeviceId(uniqueId)
+                                        DBService.getCloudSyncInfoForDeviceId(deviceId)
                                             .then(cloudSyncInfo => {
                                                 const isCached = cloudSyncInfo ? true : false
                                                 cloudSyncInfo = cloudSyncInfo ? cloudSyncInfo : {
                                                     ble_interface_id: device.id,
-                                                    device_id: uniqueId,
+                                                    device_id: deviceId,
                                                     last_synced_id: 0,
                                                     api_key: null,
                                                     reading_interval: DEFAULT_READ_INTERVAL
                                                 }
 
-                                                // Read the device's API key if there is any
+                                                // Read the device's API key if there is any and update cloudSyncInfo
                                                 this.readCharacteristicForDevice(SECURITY_SERVICE, API_KEY_CHARACTERISTIC)
                                                     .then(characteristic => {
                                                         const apiKey = characteristic.value
@@ -230,6 +232,8 @@ class BLEServiceInstance {
             })
     }
 
+    // Set up a monitor with connectedDevice for a characteristic so that we can receive notifications from the device
+    // And call onCharacteristicReceived when we receive a notification
     setupMonitor = (
         serviceUUID: UUID,
         characteristicUUID: UUID,
@@ -267,39 +271,11 @@ class BLEServiceInstance {
         )
     }
 
+    // Stop the current characteristic monitor
     finishMonitor = () => {
         this.isCharacteristicMonitorDisconnectExpected = true
         this.characteristicMonitor?.remove()
     }
-
-    isDeviceConnected = () => {
-        return this.connectedDevice?.isConnected() || false
-    }
-
-    onDeviceDisconnected = (listener: (error: BleError | null, device: Device | null) => void) => {
-        if (!this.connectedDevice) {
-            console.error(deviceNotConnectedErrorText)
-            throw new Error(deviceNotConnectedErrorText)
-        }
-        return this.manager.onDeviceDisconnected(this.connectedDevice.id, listener)
-    }
-
-    cancelTransaction = (transactionId: string) => this.manager.cancelTransaction(transactionId)
-
-    enable = () =>
-        this.manager.enable().catch(error => {
-            this.onError(error)
-        })
-
-    disable = () =>
-        this.manager.disable().catch(error => {
-            this.onError(error)
-        })
-
-    getState = () =>
-        this.manager.state().catch(error => {
-            this.onError(error)
-        })
 
     onError = (error: BleError) => {
         switch (error.errorCode) {
