@@ -33,7 +33,7 @@ import {
     type Subscription
 } from 'react-native-ble-plx'
 import { PermissionsAndroid, Platform } from 'react-native'
-import { API_KEY_CHARACTERISTIC, DEFAULT_READ_INTERVAL, DEVICE_UNIQUE_ID_CHARACTERISTIC, SECURITY_SERVICE } from '@BLE/constants'
+import { API_KEY_CHARACTERISTIC, DEFAULT_READ_INTERVAL, DEVICE_UNIQUE_ID_CHARACTERISTIC, SECURITY_SERVICE } from '../utils/constants'
 import { DBService } from './DBService'
 
 const deviceNotConnectedErrorText = 'Device is not connected'
@@ -129,46 +129,38 @@ class BLEServiceInstance {
                         .then(() => {
                             this.connectedDevice = device
 
-                            // Read the device's unique ID and save it to the DB cache if needed
+                            // Read the device's unique ID
                             this.readCharacteristicForDevice(SECURITY_SERVICE, DEVICE_UNIQUE_ID_CHARACTERISTIC)
                                 .then(characteristic => {
                                     const uniqueId = characteristic.value
                                     if (uniqueId) {
-                                        // Check if the device ID is already cached
+                                        // Check if the information the device needs to sync to the cloud is already cached
                                         DBService.getCloudSyncInfoForDeviceId(uniqueId)
                                             .then(cloudSyncInfo => {
-                                                if (!cloudSyncInfo) {
-                                                    // Device ID is not cached, so cache it
-                                                    cloudSyncInfo = {
-                                                        ble_interface_id: device.id,
-                                                        device_id: uniqueId,
-                                                        last_synced_id: 0,
-                                                        api_key: null,
-                                                        reading_interval: DEFAULT_READ_INTERVAL
-                                                    }
+                                                const isCached = cloudSyncInfo ? true : false
+                                                cloudSyncInfo = cloudSyncInfo ? cloudSyncInfo : {
+                                                    ble_interface_id: device.id,
+                                                    device_id: uniqueId,
+                                                    last_synced_id: 0,
+                                                    api_key: null,
+                                                    reading_interval: DEFAULT_READ_INTERVAL
+                                                }
 
+                                                // Read the device's API key if there is any
+                                                this.readCharacteristicForDevice(SECURITY_SERVICE, API_KEY_CHARACTERISTIC)
+                                                    .then(characteristic => {
+                                                        const apiKey = characteristic.value
+                                                        if (apiKey) {
+                                                            cloudSyncInfo.api_key = apiKey
+                                                        }
+                                                    }).catch(error => {
+                                                        console.error("Failed to read device API key", error)
+                                                    });
+
+                                                if (!isCached) {
                                                     DBService.insertCloudSyncInfo(cloudSyncInfo)
-
-                                                    // Read the device's API key if there is any
-                                                    this.readCharacteristicForDevice(SECURITY_SERVICE, API_KEY_CHARACTERISTIC)
-                                                        .then(characteristic => {
-                                                            const apiKey = characteristic.value
-                                                            if (apiKey) {
-                                                                // Update the API Key in cache
-                                                                DBService.updateCloudSyncInfoForDeviceId({
-                                                                    ...cloudSyncInfo,
-                                                                    api_key: apiKey
-                                                                })
-                                                            }
-                                                        }).catch(error => {
-                                                            console.error("Failed to read device API key", error)
-                                                        });
                                                 } else {
-                                                    // Update the BLE Interface ID in cache
-                                                    DBService.updateCloudSyncInfoForDeviceId({
-                                                        ...cloudSyncInfo,
-                                                        ble_interface_id: device.id
-                                                    })
+                                                    DBService.updateCloudSyncInfoForDeviceId(cloudSyncInfo)
                                                 }
                                             }).catch(error => {
                                                 console.error("Failed to get cloud sync info for device", error)

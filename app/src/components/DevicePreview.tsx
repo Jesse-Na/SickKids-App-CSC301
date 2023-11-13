@@ -5,9 +5,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useEffect, useMemo, useState } from "react";
-import { BLEDevice, BLEState } from "@BLE/ble.types";
-import { CARD_BACKGROUND_COLOR } from "../../utils/styles";
+import React from "react";
+import { CARD_BACKGROUND_COLOR } from "../utils/styles";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Device } from "react-native-ble-plx";
 

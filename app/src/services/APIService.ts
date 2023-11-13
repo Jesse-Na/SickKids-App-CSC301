@@ -2,7 +2,7 @@ import { API, Amplify, Auth } from 'aws-amplify';
 import base64 from "react-native-base64";
 import { DeviceId } from "react-native-ble-plx";
 import { DBService } from "./DBService";
-import { DEFAULT_READ_INTERVAL } from '@BLE/constants';
+import { DEFAULT_READ_INTERVAL } from '../utils/constants';
 
 const adminUrl = "https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/admin";
 const userUrl = "https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/users";
@@ -64,6 +64,13 @@ class APIServiceInstance {
             },
         })
             .then((interval) => {
+                // Update reading interval in cloudSyncInfo table
+                DBService.updateCloudSyncInfoForDeviceId({
+                    ...cloudSyncInfo,
+                    reading_interval: parseInt(interval)
+                }).then(() => console.log("updated reading interval in cloudSyncInfo table"))
+                    .catch((e) => console.log("failed to update reading interval in cloudSyncInfo table", e))
+
                 return interval;
             })
             .catch((e) => console.log("failed to get interval", e))
@@ -72,12 +79,10 @@ class APIServiceInstance {
     }
 
     syncToCloudForDevice = async (bleInterfaceId: string) => {
-        console.log("syncing to cloud", bleInterfaceId);
-
         const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
         const readings = await DBService.getReadings(cloudSyncInfo.device_id, cloudSyncInfo.last_synced_id);
         const hexId = this.hexadecimalSum(cloudSyncInfo.device_id);
-        console.log("id", hexId);
+        console.log("syncing to cloud with cloudSyncInfo: ", cloudSyncInfo);
 
         API.post("UserBackend", "/readings", {
             body: {
@@ -128,7 +133,7 @@ class APIServiceInstance {
                 userId: userId
             },
         })
-            .then(response  => {
+            .then(response => {
                 console.log("Device registration response: ", response)
                 DBService.updateCloudSyncInfoForDeviceId({
                     ...cloudSyncInfo,

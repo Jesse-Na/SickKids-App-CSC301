@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 import React, { useContext, useState } from "react";
-import DevicePreview from "@BLE/components/DevicePreview";
+import DevicePreview from "../../components/DevicePreview";
 import CustomButton from "../../components/CustomButton";
 import PageView from "../../components/PageView";
 import { BLEService } from "@src/services/BLEService";
@@ -10,7 +10,7 @@ import { AuthState } from "../authentication/AuthWrapper";
 import ErrorMessage from "@src/components/ErrorMessage";
 import CustomTextInput from "@src/components/CustomTextInput";
 import { APIService } from "@src/services/APIService";
-import { API_KEY_CHARACTERISTIC, SECURITY_SERVICE } from "@BLE/constants";
+import { API_KEY_CHARACTERISTIC, SECURITY_SERVICE } from "../../utils/constants";
 import base64 from "react-native-base64";
 
 type Props = {

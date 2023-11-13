@@ -3,13 +3,9 @@ import { NavigationContainer } from "@react-navigation/native";
 import App from "./App";
 import AuthWrapper from "./src/features/authentication/AuthWrapper";
 import { useEffect } from "react";
-import { launchForegroundService } from "./src/utils/foregroundService";
-import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import { cancelAllNotifications } from "./src/utils/notifications";
-import BLEWrapper from "@BLE/BLEWrapper";
 import BLEContextProvider from "@src/context/BLEContextProvider";
-import { launchBackground } from "@src/utils/background";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -22,18 +18,15 @@ Notifications.setNotificationHandler({
 const root = () => {
   useEffect(() => {
     cancelAllNotifications();
-    launchBackground()
   }, []);
   return (
     <AuthWrapper>
       <BLEContextProvider>
-        <BLEWrapper>
-          <NavigationContainer>
-            <AuthWrapper>
-              <App />
-            </AuthWrapper>
-          </NavigationContainer>
-        </BLEWrapper>
+        <NavigationContainer>
+          <AuthWrapper>
+            <App />
+          </AuthWrapper>
+        </NavigationContainer>
       </BLEContextProvider>
     </AuthWrapper>
   );

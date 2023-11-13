@@ -1,11 +1,11 @@
 import { StyleSheet, Text } from "react-native";
 import React, { useEffect, useState } from "react";
 import CustomButton from "../../components/CustomButton";
-import DevicePreview from "@BLE/components/DevicePreview";
+import DevicePreview from "../../components/DevicePreview";
 import PageView from "../../components/PageView";
 import { BLEService } from "@src/services/BLEService";
 import { Device, DeviceId } from "react-native-ble-plx";
-import { DEVICE_UNIQUE_ID_CHARACTERISTIC, MAX_SCAN_DURATION, MIN_RSSI, SECURITY_SERVICE } from "@BLE/constants";
+import { DEVICE_UNIQUE_ID_CHARACTERISTIC, MAX_SCAN_DURATION, MIN_RSSI, SECURITY_SERVICE } from "../../utils/constants";
 import base64 from "react-native-base64";
 import { useBLEContext } from "@src/context/BLEContextProvider";
 

@@ -1,10 +1,8 @@
 import { StyleSheet, Text, View } from "react-native";
-import React, { useEffect, useState } from "react";
-import DevicePreview from "@BLE/components/DevicePreview";
+import React from "react";
+import DevicePreview from "../../components/DevicePreview";
 import { Ionicons } from "@expo/vector-icons";
 import Card from "../../components/Card";
-import { BLEService } from "@src/services/BLEService";
-import { Device } from "react-native-ble-plx";
 import { useBLEContext } from "@src/context/BLEContextProvider";
 
 type Props = {
