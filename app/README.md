@@ -159,7 +159,7 @@ Each data sample consists of 167 bytes in total.
 | touch[0]   | Touch sensor 1 delta                  |           | S16           | 8           | 6890       |
 | touch[1]   | Touch sensor 2 delta                  |           | S16           | 10          | \-890      |
 | eda        | Electrodermal activity                | ADC count | U16           | 12          | 4000       |
-| hr         | Heartrate                             | bpm       | U8            | 14          | 870        |
+| hr         | Heartrate                             | bpm       | U8            | 14          | 87         |
 | confidence | Heartrate confidence level            | %         | U8            | 15          | 50         |
 | scd        | Skin contact detection                |           | U8            | 16          | 3          |
 |            | Acceleration (25 samples, 1s @ 25 Hz) |           |               |             |            |
