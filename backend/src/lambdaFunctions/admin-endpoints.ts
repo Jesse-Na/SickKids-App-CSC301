@@ -4,7 +4,7 @@ import serverless from "serverless-http";
 import getDatabase from "../database/db";
 import Device from "../database/device.entity";
 import Reading from "../database/reading.entity";
-import { getDeviceFromApiKey } from "../utils/device.utils";
+import {  } from "../utils/device.utils";
 import dotenv from "dotenv";
 import PatientDeviceHistory from "../database/patient-device-history.entity";
 import Patient from "../database/patient.entity";
@@ -153,11 +153,16 @@ app.delete("/admin/device/:deviceId", async function (req, res) {
 
 app.get("/admin/linked-device", async function (req, res) {
   const apiKey = req.query.apiKey as string;
+  const deviceId = req.body.deviceId;
+  const db = await getDatabase();
+
   console.log("checking ", req.query);
   if (!req.query.apiKey) {
     return res.status(400).send("Api key required");
   }
-  const device = await getDeviceFromApiKey(apiKey);
+  const device = await db.getRepository(Device).findOne({
+    where: { id: deviceId },
+  });
 
   if (!device) {
     return res.status(400).send("Api key is invalid");

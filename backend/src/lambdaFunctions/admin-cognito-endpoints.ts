@@ -7,7 +7,6 @@ import getDatabase from "../database/db";
 import Device from "../database/device.entity";
 import Reading from "../database/reading.entity";
 import APIKey from "../database/api-key.entity";
-import { getDeviceFromApiKey } from "../utils/device.utils";
 import dotenv from "dotenv";
 import PatientDeviceHistory from "../database/patient-device-history.entity";
 import Patient from "../database/patient.entity";
