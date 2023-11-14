@@ -18,7 +18,7 @@ Notifications.setNotificationHandler({
 const root = () => {
   useEffect(() => {
     cancelAllNotifications();
-    launchBackground();
+    launchBackground(); // For notifications
   }, []);
   return (
     <AuthWrapper>
