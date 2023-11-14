@@ -54,7 +54,6 @@ const Monitor = ({ navigation }: Props) => {
       ? decoded.charCodeAt(8)
       : 0;
 
-    console.log("monitior.tsx", heartRate);
     setDeviceProperties("heartRate", heartRate);
 
     const isCharging: number = !Number.isNaN(decoded.charCodeAt(7))

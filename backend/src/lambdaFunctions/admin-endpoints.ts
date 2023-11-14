@@ -38,8 +38,7 @@ app.get("/admin/devices", async function (req, res) {
         "reading",
         "reading.id = (SELECT id FROM reading WHERE reading.deviceId = device.id ORDER BY reading.deviceSynced DESC LIMIT 1)"
       )
-      .leftJoinAndSelect("device.apiKey", "apiKey")
-      .leftJoinAndSelect("device.users", "user", "user.removed IS NULL")
+      .leftJoinAndSelect("device.patientHistory", "user", "user.removed IS NULL")
       .leftJoinAndSelect("user.patient", "patient")
       .getMany();
     console.log("got devices", JSON.stringify(latestReadingQuery));
@@ -52,6 +51,7 @@ app.get("/admin/devices", async function (req, res) {
           device.readings.length > 0 ? device.readings[0].deviceSynced : null,
         lastReset: device.createdAt,
         user: device.patientHistory.length > 0 ? device.patientHistory[0].patient.id : null,
+        frequency: device.frequency,
       }))
     );
   } catch (e) {
@@ -74,8 +74,7 @@ app.get("/admin/device/:deviceId", async function (req, res) {
         "reading",
         "reading.id = (SELECT id FROM reading WHERE reading.deviceId = device.id ORDER BY reading.deviceSynced DESC LIMIT 1)"
       )
-      .leftJoinAndSelect("device.apiKey", "apiKey")
-      .leftJoinAndSelect("device.users", "user", "user.removed IS NULL")
+      .leftJoinAndSelect("device.patientHistory", "user", "user.removed IS NULL")
       .leftJoinAndSelect("user.patient", "patient")
       .getOne();
 
@@ -120,11 +119,12 @@ app.put("/admin/device/:deviceId", async function (req, res) {
   const device = await db.getRepository(Device).findOne({
     where: { id: req.params.deviceId },
   });
-  const { interval, name } = req.body;
-  console.log({ device, interval, name });
-  if (!device || !interval || !name) return res.status(400).send();
+  const { interval, name, frequency } = req.body;
+  console.log({ device, interval, name, frequency });
+  if (!device || !interval || !name || !frequency) return res.status(400).send();
   device.interval = interval;
   device.name = name;
+  device.frequency = frequency;
   db.getRepository(Device).save(device);
   res.send(device);
 });
@@ -280,7 +280,7 @@ app.get("/admin/patientReadings/:patientId", async function (req, res) {
     .getRepository(Reading)
     .createQueryBuilder("reading")
     .leftJoinAndSelect("reading.device", "device")
-    .leftJoin("device.users", "user")
+    .leftJoin("device.patientHistory", "user")
     .leftJoin("user.patient", "patient")
     .where(
       "patient.id = :id AND reading.deviceSynced > user.created AND (user.removed IS NULL OR reading.deviceSynced < user.removed)",
@@ -326,7 +326,7 @@ app.get("/admin/patient/:patientId/battery", async function (req, res) {
     .createQueryBuilder("reading")
     .select(["reading.battery", "reading.timestamp"])
     .leftJoin("reading.device", "device")
-    .leftJoin("device.users", "user")
+    .leftJoin("device.patientHistory", "user")
     .leftJoin("user.patient", "patient")
     .where(
       "patient.id = :id AND reading.deviceSynced > user.created AND (user.removed IS NULL OR reading.deviceSynced < user.removed)",
@@ -351,7 +351,7 @@ app.get("/admin/patient/:patientId/dailyUsage", async function (req, res) {
     .createQueryBuilder("reading")
     .select("COUNT(reading.id), DATE(reading.timestamp)")
     .leftJoin("reading.device", "device")
-    .leftJoin("device.users", "user")
+    .leftJoin("device.patientHistory", "user")
     .leftJoin("user.patient", "patient")
     .where(
       "patient.id = :id AND reading.deviceSynced > user.created AND (user.removed IS NULL OR reading.deviceSynced < user.removed)",

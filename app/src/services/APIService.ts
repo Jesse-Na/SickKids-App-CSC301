@@ -78,7 +78,6 @@ class APIServiceInstance {
         const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
         const readings = await DBService.getReadings(cloudSyncInfo.device_id, cloudSyncInfo.last_synced_id);
         const hexId = this.convertBase64ToHex(cloudSyncInfo.device_id);
-        console.log("syncing to cloud with cloudSyncInfo: ", cloudSyncInfo);
 
         API.post("UserBackend", "/readings", {
             body: {
