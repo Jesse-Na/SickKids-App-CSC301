@@ -4,14 +4,14 @@ import { DeviceId } from "react-native-ble-plx";
 import { DBService } from "./DBService";
 import { DEFAULT_READ_INTERVAL } from '../utils/constants';
 
-const adminUrl = "https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/admin";
-const userUrl = "https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/users";
+const adminUrl = "https://xbs8qyjek5.execute-api.ca-central-1.amazonaws.com/dev/admin";
+const userUrl = "https://xbs8qyjek5.execute-api.ca-central-1.amazonaws.com/dev/users";
 
 export const AmplifyConfig = {
     Auth: {
         region: "ca-central-1",
-        userPoolId: "ca-central-1_NZlWWBBKg",
-        userPoolWebClientId: "27acm70ngeh0p5kkf5qruvbtbo",
+        userPoolId: "ca-central-1_heZehJBfQ",
+        userPoolWebClientId: "37ok0fbe88evr31re50r6m0rpg",
     },
     API: {
         endpoints: [

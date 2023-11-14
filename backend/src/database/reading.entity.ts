@@ -21,15 +21,6 @@ export default class Reading {
   @Column()
   battery: number;
 
-  @Column()
-  accelX: number;
-
-  @Column()
-  accelY: number;
-
-  @Column()
-  accelZ: number;
-
   @ManyToOne(() => Device, (device) => device.readings)
   device: Device;
 }

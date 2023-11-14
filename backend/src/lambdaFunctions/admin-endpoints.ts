@@ -374,6 +374,15 @@ app.get("/admin/patient/:patientId/dailyUsage", async function (req, res) {
 
   res.send(formattedReadingCount);
 });
+
+app.use((req, res, next) => {
+  console.log("404", req);
+  return res.set("Access-Control-Allow-Origin", "*").status(404).send({
+    reqPath: req.path,
+    error: "Not Found",
+  });
+});
+
 let devServer;
 if (process.env.NODE_ENV === "development")
   devServer = app.listen(4100, async () => {
