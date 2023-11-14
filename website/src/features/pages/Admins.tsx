@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { deleteAdminAccount, getAllAdmins } from '../../api';
 import AdminTable from '../admins/AdminTable';
-import { Button, Dialog, DialogTitle } from '@mui/material';
 import CreateAdminDialog from '../admins/CreateAdminDialog';
 import { Admin } from '../../utils/types';
 

@@ -22,6 +22,9 @@ export const decodeReading = (
     touchSensor1: !!buff[4],
     touchSensor2: !!buff[5],
     battery: buff[6],
+    accelX: 0,
+    accelY: 0,
+    accelZ: 0,
     device,
   };
 };

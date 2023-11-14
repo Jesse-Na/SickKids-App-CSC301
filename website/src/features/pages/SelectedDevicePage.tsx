@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getDevice } from "../../api";
-import { Device, DeviceReading } from "../../utils/types";
+import { Device } from "../../utils/types";
 import { useNavigate, useParams } from "react-router-dom";
 import moment from "moment";
 import { Button, CircularProgress } from "@mui/material";
@@ -138,7 +138,7 @@ export default function SelectedDevicePage({}: Props) {
         open={disableDevicePopupOpen}
         handleClose={() => setDisableDevicePopupOpen(false)}
       />
-      {/*       
+      {/*
       <UserGraphs userData={userData} />
       <UserDataTable
         userData={userData}
