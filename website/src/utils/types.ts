@@ -29,6 +29,7 @@ export type Admin = {
 export type Device = {
   id: string;
   interval: number;
+  frequency: number;
   lastReset: string | null;
   lastSynced: string | null;
   name: string;

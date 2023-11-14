@@ -19,6 +19,9 @@ export default class Device {
   @Column()
   interval: number;
 
+  @Column()
+  frequency: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

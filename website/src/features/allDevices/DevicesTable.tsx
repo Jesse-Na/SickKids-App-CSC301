@@ -48,6 +48,7 @@ export default function DevicesTable({}: Props) {
           name: device.name,
           user: device.user,
           interval: convertMsToString(device.interval),
+          frequency: device.frequency,
           lastSynced: device.lastSynced
             ? moment(device.lastSynced).fromNow()
             : "Not Synced",
@@ -73,6 +74,10 @@ export default function DevicesTable({}: Props) {
           {
             id: "interval",
             title: "Reading Interval",
+          },
+          {
+            id: "frequency",
+            title: "Questionnaire Frequency",
           },
           {
             id: "lastSynced",
