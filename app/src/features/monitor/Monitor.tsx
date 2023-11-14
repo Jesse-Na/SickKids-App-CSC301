@@ -9,7 +9,6 @@ import HeartRate from "./HeartRate";
 import Connectivity from "./Connectivity";
 import ReadingInterval from "./ReadingInterval";
 import { BLEService } from "@src/services/BLEService";
-import { Device } from "react-native-ble-plx";
 import { APIService } from "@src/services/APIService";
 import { DATA_CHARACTERISTIC, DATA_USAGE_SERVICE } from "../../utils/constants";
 import base64 from "react-native-base64";
@@ -171,5 +170,7 @@ const Monitor = ({ navigation }: Props) => {
 };
 
 export default Monitor;
+
+
 
 const styles = StyleSheet.create({});
