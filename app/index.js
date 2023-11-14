@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
 import { cancelAllNotifications } from "./src/utils/notifications";
 import BLEContextProvider from "@src/context/BLEContextProvider";
+import { launchBackground } from "@src/utils/background";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
