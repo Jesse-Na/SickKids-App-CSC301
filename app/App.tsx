@@ -2,12 +2,23 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import DeviceTab from "./src/features/tabs/DeviceTab";
 import SettingsTab from "./src/features/tabs/SettingsTab";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import * as Notifications from "expo-notifications"
 import {
   CARD_BACKGROUND_COLOR,
   HEADER_BACKGROUND_COLOR,
   TAB_BAR_BACKGROUND_COLOR,
 } from "./src/utils/styles";
 import SelfReportingTab from "./src/features/tabs/SelfReportingTab";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => {
+    return {
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+    }
+  }
+})
 
 export type RootTabParamList = {
   DeviceTab: undefined;

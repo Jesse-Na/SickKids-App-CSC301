@@ -11,11 +11,13 @@ import ReadingInterval from "./ReadingInterval";
 import { BLEService } from "@src/services/BLEService";
 import { Device } from "react-native-ble-plx";
 import { APIService } from "@src/services/APIService";
+import * as BLEDecode from "@BLE/bleDecode";
 import { DATA_CHARACTERISTIC, DATA_USAGE_SERVICE } from "@BLE/constants";
 import base64 from "react-native-base64";
 import { DBService } from "@src/services/DBService";
 import { Buffer } from "buffer";
 import { useBLEContext, defaultDeviceProperties } from "@src/context/BLEContextProvider";
+import { BLEDevice } from "@BLE/ble.types";
 type Props = NativeStackScreenProps<DeviceStackParamList, "Monitor">;
 
 const Monitor = ({ navigation }: Props) => {
@@ -144,5 +146,7 @@ const Monitor = ({ navigation }: Props) => {
 };
 
 export default Monitor;
+
+
 
 const styles = StyleSheet.create({});

@@ -1,5 +1,5 @@
 import * as Notifications from "expo-notifications";
-import { Alert, Linking } from "react-native";
+import { Alert, Linking, Platform } from "react-native";
 
 export const scheduleNotifications = async () => {
   await Notifications.cancelAllScheduledNotificationsAsync();
@@ -7,9 +7,6 @@ export const scheduleNotifications = async () => {
     content: {
       title: "Please Reconnect PTS Device",
       body: "The device has not been connected recently, please open the app to reconnect.",
-      android: {
-        priority: Notifications.AndroidNotificationPriority.HIGH,
-      }
     },
     trigger: { minute: 1, repeats: true },
     
@@ -23,6 +20,21 @@ export const disconnected = async () => {};
 export const connected = async () => {};
 export const syncedToCloud = async () => {};
 export const cloudSyncedFailed = async () => {};
+
+
+
+export const sendLowBatteryNotification = async (batteryLevel: number) => {
+  // Sends a notification that the battery is low.
+    if (batteryLevel < 10) {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "Low Battery Warning",
+          body: `Your battery level is low (${batteryLevel}%). Please charge your device.`,
+        },
+        trigger: null, // This notification is a one-time alert
+      });
+    }
+};
 
 
 export const sendOneTimeNotification = async (
@@ -53,6 +65,12 @@ export const requestNotificationPermissions = async () => {
       allowAlert: true,
     },
   });
+  if (Platform.OS == "android") {
+    Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX,
+    })
+  }
   if (!status.granted) {
     console.log("Notification permission not granted");
 
@@ -71,5 +89,8 @@ export const requestNotificationPermissions = async () => {
         },
       ]
     );
+  }
+  else {
+    console.log("Notification permissions granted!");
   }
 };
