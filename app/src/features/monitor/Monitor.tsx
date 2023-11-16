@@ -10,7 +10,7 @@ import Connectivity from "./Connectivity";
 import ReadingInterval from "./ReadingInterval";
 import { BLEService } from "@src/services/BLEService";
 import { APIService } from "@src/services/APIService";
-import { DATA_CHARACTERISTIC, DATA_USAGE_SERVICE } from "../../utils/constants";
+import { DATA_CHARACTERISTIC, DATA_USAGE_SERVICE, READING_SAMPLE_LENGTH, TRANSFER_REQUEST_CHARACTERISTIC, TRANSFER_STATUS_CHARACTERISTIC } from "../../utils/constants";
 import base64 from "react-native-base64";
 import { DBService } from "@src/services/DBService";
 import { Buffer } from "buffer";
@@ -74,20 +74,20 @@ const Monitor = ({ navigation }: Props) => {
     if (!apiKey || !deviceUniqueId) {
       // Get the API key and unique device ID for this device
       DBService.getCloudSyncInfoForBleInterfaceId(device.id)
-      .then((info) => {
-        if (info.api_key && info.device_id) {
-          setDeviceUniqueId(info.device_id);
-          setApiKey(info.api_key);
-        } else {
-          console.log("not registered");
-          setApiKeyError(
-            "This device has not been registered, please contact an admin to enable it"
-          );
-        }
-      })
-      .catch((e) => {
-        console.error(e);
-      });
+        .then((info) => {
+          if (info.api_key && info.device_id) {
+            setDeviceUniqueId(info.device_id);
+            setApiKey(info.api_key);
+          } else {
+            console.log("not registered");
+            setApiKeyError(
+              "This device has not been registered, please contact an admin to enable it"
+            );
+          }
+        })
+        .catch((e) => {
+          console.error(e);
+        });
 
       return;
     } else {
@@ -98,25 +98,75 @@ const Monitor = ({ navigation }: Props) => {
       return;
     }
 
-    BLEService.setupMonitor(
+    // Write to Transfer Request Char to indicate we are ready to receive data
+    BLEService.writeCharacteristicWithoutResponseForDevice(
       DATA_USAGE_SERVICE,
-      DATA_CHARACTERISTIC,
-      async (characteristic) => {
-        if (characteristic.value) {
-          decodeDataCharacteristic(characteristic.value);
-          DBService.saveReading(characteristic.value, deviceUniqueId);
-          APIService.syncToCloudForDevice(device.id);
+      TRANSFER_REQUEST_CHARACTERISTIC,
+      base64.encode("1")
+    ).then(() => {
+      console.log("wrote to transfer request char");
+      BLEService.setupMonitor(
+        DATA_USAGE_SERVICE,
+        DATA_CHARACTERISTIC,
+        async (characteristic) => {
+          let nextExpectedFragmentIndex = 0;
+          let fragmentArray = [];
+          let bytesRemainingToCompleteSample = READING_SAMPLE_LENGTH;
+          if (characteristic.value) {
+            const decodedString = base64.decode(characteristic.value);
+            const fragmentIndex = combineBytes(Buffer.from(decodedString), 0, 2);
+
+            // Drop out of order fragments
+            if (fragmentIndex !== nextExpectedFragmentIndex) {
+              return;
+            }
+
+            // Check if this is the last fragment
+            if (fragmentIndex === 65535) {
+              BLEService.finishMonitor();
+              return;
+            }
+
+            const fragmentData = decodedString.substring(2);
+            fragmentArray.push(fragmentData);
+            bytesRemainingToCompleteSample -= fragmentData.length;
+            if (bytesRemainingToCompleteSample <= 0) {
+              // Compile fragments into sample and save to DB
+              const sample = fragmentArray.join("").substring(0, READING_SAMPLE_LENGTH);
+
+              DBService.saveReading(sample, deviceUniqueId);
+              APIService.syncToCloudForDevice(device.id);
+
+              // Reset state
+              fragmentArray = [];
+              bytesRemainingToCompleteSample = READING_SAMPLE_LENGTH;
+            }
+          }
+
+          // Periodically send an acknowledgement to the device for the data we received
+          setTimeout(() => {
+            BLEService.writeCharacteristicWithoutResponseForDevice(
+              DATA_USAGE_SERVICE,
+              TRANSFER_STATUS_CHARACTERISTIC,
+              base64.encode(nextExpectedFragmentIndex.toString())
+            ).then(() => {
+              console.log("wrote to transfer request char");
+            });
+          }, 5000);
+        },
+        async (error) => {
+          console.error(error);
+          setMonitoring(false);
+          BLEService.finishMonitor();
         }
-      },
-      async (error) => {
-        console.error(error);
-        setMonitoring(false);
-        BLEService.finishMonitor();
-      }
-    );
+      );
+    }).catch((e) => {
+      console.error(e);
+    });
+
   }, [device, apiKey, deviceUniqueId]);
 
-  const setReadingInterval = async (interval: number) => {};
+  const setReadingInterval = async (interval: number) => { };
 
   const refreshDevice = async () => {
     try {
