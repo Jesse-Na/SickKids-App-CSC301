@@ -33,7 +33,7 @@ import {
     type Subscription
 } from 'react-native-ble-plx'
 import { PermissionsAndroid, Platform } from 'react-native'
-import { API_KEY_CHARACTERISTIC, DEFAULT_READ_INTERVAL, DEVICE_UNIQUE_ID_CHARACTERISTIC, SECURITY_SERVICE } from '../utils/constants'
+import { API_KEY_CHARACTERISTIC, DEFAULT_READ_INTERVAL, UNIQUE_DEVICE_ID_CHARACTERISTIC, SECURITY_SERVICE } from '../utils/constants'
 import { DBService } from './DBService'
 
 const deviceNotConnectedErrorText = 'Device is not connected'
@@ -132,7 +132,7 @@ class BLEServiceInstance {
                             this.connectedDevice = device
 
                             // Read the device's unique ID
-                            this.readCharacteristicForDevice(SECURITY_SERVICE, DEVICE_UNIQUE_ID_CHARACTERISTIC)
+                            this.readCharacteristicForDevice(SECURITY_SERVICE, UNIQUE_DEVICE_ID_CHARACTERISTIC)
                                 .then(characteristic => {
                                     const deviceId = characteristic.value
                                     if (deviceId) {

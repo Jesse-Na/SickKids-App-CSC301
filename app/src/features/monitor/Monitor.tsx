@@ -10,7 +10,7 @@ import Connectivity from "./Connectivity";
 import ReadingInterval from "./ReadingInterval";
 import { BLEService } from "@src/services/BLEService";
 import { APIService } from "@src/services/APIService";
-import { DATA_CHARACTERISTIC, DATA_USAGE_SERVICE, READING_SAMPLE_LENGTH, TRANSFER_REQUEST_CHARACTERISTIC, TRANSFER_STATUS_CHARACTERISTIC } from "../../utils/constants";
+import { DATA_COMMUNICATION_CHARACTERISTIC, RAW_DATA_CHARACTERISTIC, READING_SAMPLE_LENGTH, READING_TIMEOUT, TRANSFER_SERVICE } from "../../utils/constants";
 import base64 from "react-native-base64";
 import { DBService } from "@src/services/DBService";
 import { Buffer } from "buffer";
@@ -100,36 +100,50 @@ const Monitor = ({ navigation }: Props) => {
 
     // Write to Transfer Request Char to indicate we are ready to receive data
     BLEService.writeCharacteristicWithoutResponseForDevice(
-      DATA_USAGE_SERVICE,
-      TRANSFER_REQUEST_CHARACTERISTIC,
-      base64.encode("1")
+      TRANSFER_SERVICE,
+      DATA_COMMUNICATION_CHARACTERISTIC,
+      base64.encode(0x01.toString())
     ).then(() => {
       console.log("wrote to transfer request char");
       BLEService.setupMonitor(
-        DATA_USAGE_SERVICE,
-        DATA_CHARACTERISTIC,
+        TRANSFER_SERVICE,
+        RAW_DATA_CHARACTERISTIC,
         async (characteristic) => {
           let nextExpectedFragmentIndex = 0;
           let fragmentArray = [];
           let bytesRemainingToCompleteSample = READING_SAMPLE_LENGTH;
           if (characteristic.value) {
             const decodedString = base64.decode(characteristic.value);
-            const fragmentIndex = combineBytes(Buffer.from(decodedString), 0, 2);
+            const fragmentIndex = combineBytes(Buffer.from(decodedString), 0, 1);
 
-            // Drop out of order fragments
-            if (fragmentIndex !== nextExpectedFragmentIndex) {
-              return;
-            }
+            // Check if the fragment is a termination fragment
+            if (fragmentIndex === 0xFFFF) {
+              // TODO: Check if we have received all the fragments
 
-            // Check if this is the last fragment
-            if (fragmentIndex === 65535) {
               BLEService.finishMonitor();
               return;
             }
 
-            const fragmentData = decodedString.substring(2);
+            // Drop out of order fragments
+            if (fragmentIndex !== nextExpectedFragmentIndex) {
+              BLEService.writeCharacteristicWithoutResponseForDevice(
+                TRANSFER_SERVICE,
+                DATA_COMMUNICATION_CHARACTERISTIC,
+                base64.encode(0x03.toString() + (nextExpectedFragmentIndex - 1).toString())
+              ).then(() => {
+                console.log("chunk out of sequence error thrown");
+              });
+              return;
+            }
+
+            const fragmentData = decodedString.substring(1);
             fragmentArray.push(fragmentData);
             bytesRemainingToCompleteSample -= fragmentData.length;
+            nextExpectedFragmentIndex++;
+            if (nextExpectedFragmentIndex >= 0xFFFF) {
+              nextExpectedFragmentIndex = 0;
+            }
+
             if (bytesRemainingToCompleteSample <= 0) {
               // Compile fragments into sample and save to DB
               const sample = fragmentArray.join("").substring(0, READING_SAMPLE_LENGTH);
@@ -146,9 +160,9 @@ const Monitor = ({ navigation }: Props) => {
           // Periodically send an acknowledgement to the device for the data we received
           setTimeout(() => {
             BLEService.writeCharacteristicWithoutResponseForDevice(
-              DATA_USAGE_SERVICE,
-              TRANSFER_STATUS_CHARACTERISTIC,
-              base64.encode(nextExpectedFragmentIndex.toString())
+              TRANSFER_SERVICE,
+              DATA_COMMUNICATION_CHARACTERISTIC,
+              base64.encode(0x01.toString() + (nextExpectedFragmentIndex - 1).toString())
             ).then(() => {
               console.log("wrote to transfer request char");
             });

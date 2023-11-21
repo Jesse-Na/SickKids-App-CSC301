@@ -5,7 +5,7 @@ import DevicePreview from "../../components/DevicePreview";
 import PageView from "../../components/PageView";
 import { BLEService } from "@src/services/BLEService";
 import { Device, DeviceId } from "react-native-ble-plx";
-import { DEVICE_UNIQUE_ID_CHARACTERISTIC, MAX_SCAN_DURATION, MIN_RSSI, SECURITY_SERVICE } from "../../utils/constants";
+import { UNIQUE_DEVICE_ID_CHARACTERISTIC, MAX_SCAN_DURATION, MIN_RSSI, CONFIGURATION_SERVICE } from "../../utils/constants";
 import base64 from "react-native-base64";
 import { useBLEContext } from "@src/context/BLEContextProvider";
 
@@ -50,7 +50,7 @@ const ScanForDevices = (props: Props) => {
     stopScan();
     BLEService.connectToDevice(deviceId)
       .then((device) => {
-        BLEService.readCharacteristicForDevice(SECURITY_SERVICE, DEVICE_UNIQUE_ID_CHARACTERISTIC)
+        BLEService.readCharacteristicForDevice(CONFIGURATION_SERVICE, UNIQUE_DEVICE_ID_CHARACTERISTIC)
           .then(characteristic => {
             if (characteristic.value) {
               const buff = base64.decode(characteristic.value);
