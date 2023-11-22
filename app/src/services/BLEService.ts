@@ -33,7 +33,7 @@ import {
     type Subscription
 } from 'react-native-ble-plx'
 import { PermissionsAndroid, Platform } from 'react-native'
-import { API_KEY_CHARACTERISTIC, CONFIGURATION_SERVICE, DEFAULT_READ_INTERVAL, UNIQUE_DEVICE_ID_CHARACTERISTIC } from '../utils/constants'
+import { API_KEY_CHARACTERISTIC, CONFIGURATION_SERVICE, DEFAULT_MTU_SIZE, DEFAULT_READ_INTERVAL, TRANSFER_SERVICE, UNIQUE_DEVICE_ID_CHARACTERISTIC } from '../utils/constants'
 import { DBService } from './DBService'
 
 const deviceNotConnectedErrorText = 'Device is not connected'
@@ -101,7 +101,7 @@ class BLEServiceInstance {
 
     scanAllDevices = async (onDeviceFound: (device: Device) => void) => {
         console.log("Scan started")
-        this.manager.startDeviceScan(null, null, (error, device) => {
+        this.manager.startDeviceScan([TRANSFER_SERVICE], null, (error, device) => {
             if (error) {
                 this.onError(error)
                 console.error(error.message)
@@ -130,6 +130,14 @@ class BLEServiceInstance {
                     device.discoverAllServicesAndCharacteristics()
                         .then(() => {
                             this.connectedDevice = device
+
+                            // Negotiate MTU size
+                            this.manager.requestMTUForDevice(device.id, DEFAULT_MTU_SIZE)
+                                .then(mtu => {
+                                    console.log("MTU negotiated: " + mtu)
+                                }).catch(error => {
+                                    console.error("Failed to negotiate MTU", error)
+                                })
 
                             // Read the device's unique ID
                             this.readCharacteristicForDevice(CONFIGURATION_SERVICE, UNIQUE_DEVICE_ID_CHARACTERISTIC)

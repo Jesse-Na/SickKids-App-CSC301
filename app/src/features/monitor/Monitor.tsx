@@ -10,7 +10,7 @@ import Connectivity from "./Connectivity";
 import ReadingInterval from "./ReadingInterval";
 import { BLEService } from "@src/services/BLEService";
 import { APIService } from "@src/services/APIService";
-import { DATA_COMMUNICATION_CHARACTERISTIC, DATA_TRANSFER_OK, DATA_TRANSFER_OUT_OF_ORDER, DATA_TRANSFER_RESET, FRAGMENT_INDEX_SIZE, RAW_DATA_CHARACTERISTIC, READING_SAMPLE_LENGTH, TRANSFER_SERVICE } from "../../utils/constants";
+import { DATA_COMMUNICATION_CHARACTERISTIC, DATA_TRANSFER_ACK_INTERVAL, DATA_TRANSFER_FIN, DATA_TRANSFER_OK, DATA_TRANSFER_OUT_OF_ORDER, DATA_TRANSFER_START, DATA_TRANSFER_TIMEOUT, FRAGMENT_INDEX_SIZE, RAW_DATA_CHARACTERISTIC, READING_SAMPLE_LENGTH, TRANSFER_SERVICE } from "../../utils/constants";
 import base64 from "react-native-base64";
 import { DBService } from "@src/services/DBService";
 import { Buffer } from "buffer";
@@ -30,7 +30,8 @@ const Monitor = ({ navigation }: Props) => {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [deviceUniqueId, setDeviceUniqueId] = useState<string | null>(null);
   const [isMonitoring, setMonitoring] = useState<boolean>(false);
-  const [sendTransferStatusInterval, setSendTransferStatusInterval] = useState<any>(null);
+  const [sendTransferAckInterval, setSendTransferAckInterval] = useState<any>(null);
+  const [transferTimeoutInterval, setTransferTimeoutInterval] = useState<any>(null);
 
   const combineBytes = (bytes: Buffer, from: number, to: number) => {
     return bytes.subarray(from, to).reduce((a, p) => 256 * a + p, 0);
@@ -100,12 +101,13 @@ const Monitor = ({ navigation }: Props) => {
     }
 
     // Write to Transfer Request Char to indicate we are ready to receive data
+    let prevExpectedFragmentIndex = 0;
     let nextExpectedFragmentIndex = 0;
     let totalFragmentsReceived = 0;
     let fragmentArray: string[] = [];
     let bytesRemainingToCompleteSample = READING_SAMPLE_LENGTH;
 
-    setSendTransferStatusInterval(setInterval(() => {
+    setSendTransferAckInterval(setInterval(() => {
       // Send an acknowledgement to the device that we successfully received the message
       BLEService.writeCharacteristicWithoutResponseForDevice(
         TRANSFER_SERVICE,
@@ -114,12 +116,21 @@ const Monitor = ({ navigation }: Props) => {
       ).then(() => {
         console.log("acknowledged fragments up to and including: ", nextExpectedFragmentIndex - 1);
       });
-    }, 1000));
+    }, DATA_TRANSFER_ACK_INTERVAL));
+
+    setTransferTimeoutInterval(setInterval(() => {
+      if (prevExpectedFragmentIndex === nextExpectedFragmentIndex) {
+        console.log("no fragments received in the last ", DATA_TRANSFER_TIMEOUT, " seconds, restarting");
+        finishMonitoring();
+      } else {
+        prevExpectedFragmentIndex = nextExpectedFragmentIndex;
+      }
+    }, DATA_TRANSFER_TIMEOUT));
 
     BLEService.writeCharacteristicWithoutResponseForDevice(
       TRANSFER_SERVICE,
       DATA_COMMUNICATION_CHARACTERISTIC,
-      base64.encode(0x01.toString())
+      base64.encode(DATA_TRANSFER_START.toString())
     ).then(() => {
       console.log("wrote to transfer request char");
       BLEService.setupMonitor(
@@ -131,7 +142,7 @@ const Monitor = ({ navigation }: Props) => {
             const fragmentIndex = combineBytes(Buffer.from(decodedString), 0, FRAGMENT_INDEX_SIZE);
 
             // Check if the fragment is a termination fragment
-            if (fragmentIndex === 0xFFFF) {
+            if (fragmentIndex === DATA_TRANSFER_FIN) {
               // Check if we have received all the fragments
               const numFragmentsSentFromDevice = combineBytes(Buffer.from(decodedString), FRAGMENT_INDEX_SIZE, FRAGMENT_INDEX_SIZE + 2);
               if (totalFragmentsReceived === numFragmentsSentFromDevice) {
@@ -139,7 +150,7 @@ const Monitor = ({ navigation }: Props) => {
                 BLEService.writeCharacteristicWithoutResponseForDevice(
                   TRANSFER_SERVICE,
                   DATA_COMMUNICATION_CHARACTERISTIC,
-                  base64.encode(DATA_TRANSFER_RESET.toString())
+                  base64.encode(DATA_TRANSFER_OK.toString()  + DATA_TRANSFER_FIN.toString())
                 ).then(() => {
                   console.log("acknowledged termination");
                 });
@@ -166,7 +177,7 @@ const Monitor = ({ navigation }: Props) => {
             totalFragmentsReceived++;
             nextExpectedFragmentIndex++;
 
-            if (nextExpectedFragmentIndex >= 0xFFFF) {
+            if (nextExpectedFragmentIndex >= DATA_TRANSFER_FIN) {
               nextExpectedFragmentIndex = 0;
             }
 
@@ -216,7 +227,8 @@ const Monitor = ({ navigation }: Props) => {
 
   const finishMonitoring = () => {
     setMonitoring(false);
-    clearInterval(sendTransferStatusInterval);
+    clearInterval(sendTransferAckInterval);
+    clearInterval(transferTimeoutInterval);
     BLEService.finishMonitor();
   }
 
