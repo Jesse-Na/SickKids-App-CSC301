@@ -10,7 +10,7 @@ import Connectivity from "./Connectivity";
 import ReadingInterval from "./ReadingInterval";
 import { BLEService } from "@src/services/BLEService";
 import { APIService } from "@src/services/APIService";
-import { DATA_COMMUNICATION_CHARACTERISTIC, RAW_DATA_CHARACTERISTIC, READING_SAMPLE_LENGTH, READING_TIMEOUT, TRANSFER_SERVICE } from "../../utils/constants";
+import { DATA_COMMUNICATION_CHARACTERISTIC, DATA_TRANSFER_OK, DATA_TRANSFER_OUT_OF_ORDER, DATA_TRANSFER_RESET, FRAGMENT_INDEX_SIZE, RAW_DATA_CHARACTERISTIC, READING_SAMPLE_LENGTH, TRANSFER_SERVICE } from "../../utils/constants";
 import base64 from "react-native-base64";
 import { DBService } from "@src/services/DBService";
 import { Buffer } from "buffer";
@@ -30,6 +30,7 @@ const Monitor = ({ navigation }: Props) => {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [deviceUniqueId, setDeviceUniqueId] = useState<string | null>(null);
   const [isMonitoring, setMonitoring] = useState<boolean>(false);
+  const [sendTransferStatusInterval, setSendTransferStatusInterval] = useState<any>(null);
 
   const combineBytes = (bytes: Buffer, from: number, to: number) => {
     return bytes.subarray(from, to).reduce((a, p) => 256 * a + p, 0);
@@ -99,6 +100,22 @@ const Monitor = ({ navigation }: Props) => {
     }
 
     // Write to Transfer Request Char to indicate we are ready to receive data
+    let nextExpectedFragmentIndex = 0;
+    let totalFragmentsReceived = 0;
+    let fragmentArray: string[] = [];
+    let bytesRemainingToCompleteSample = READING_SAMPLE_LENGTH;
+
+    setSendTransferStatusInterval(setInterval(() => {
+      // Send an acknowledgement to the device that we successfully received the message
+      BLEService.writeCharacteristicWithoutResponseForDevice(
+        TRANSFER_SERVICE,
+        DATA_COMMUNICATION_CHARACTERISTIC,
+        base64.encode(DATA_TRANSFER_OK.toString() + (nextExpectedFragmentIndex - 1).toString())
+      ).then(() => {
+        console.log("acknowledged fragments up to and including: ", nextExpectedFragmentIndex - 1);
+      });
+    }, 1000));
+
     BLEService.writeCharacteristicWithoutResponseForDevice(
       TRANSFER_SERVICE,
       DATA_COMMUNICATION_CHARACTERISTIC,
@@ -109,19 +126,26 @@ const Monitor = ({ navigation }: Props) => {
         TRANSFER_SERVICE,
         RAW_DATA_CHARACTERISTIC,
         async (characteristic) => {
-          let nextExpectedFragmentIndex = 0;
-          let fragmentArray = [];
-          let bytesRemainingToCompleteSample = READING_SAMPLE_LENGTH;
           if (characteristic.value) {
             const decodedString = base64.decode(characteristic.value);
-            const fragmentIndex = combineBytes(Buffer.from(decodedString), 0, 1);
+            const fragmentIndex = combineBytes(Buffer.from(decodedString), 0, FRAGMENT_INDEX_SIZE);
 
             // Check if the fragment is a termination fragment
             if (fragmentIndex === 0xFFFF) {
-              // TODO: Check if we have received all the fragments
-
-              BLEService.finishMonitor();
-              return;
+              // Check if we have received all the fragments
+              const numFragmentsSentFromDevice = combineBytes(Buffer.from(decodedString), FRAGMENT_INDEX_SIZE, FRAGMENT_INDEX_SIZE + 2);
+              if (totalFragmentsReceived === numFragmentsSentFromDevice) {
+                // Acknowledge the termination fragment
+                BLEService.writeCharacteristicWithoutResponseForDevice(
+                  TRANSFER_SERVICE,
+                  DATA_COMMUNICATION_CHARACTERISTIC,
+                  base64.encode(DATA_TRANSFER_RESET.toString())
+                ).then(() => {
+                  console.log("acknowledged termination");
+                });
+                finishMonitoring();
+                return;
+              }
             }
 
             // Drop out of order fragments
@@ -129,17 +153,19 @@ const Monitor = ({ navigation }: Props) => {
               BLEService.writeCharacteristicWithoutResponseForDevice(
                 TRANSFER_SERVICE,
                 DATA_COMMUNICATION_CHARACTERISTIC,
-                base64.encode(0x03.toString() + (nextExpectedFragmentIndex - 1).toString())
+                base64.encode(DATA_TRANSFER_OUT_OF_ORDER.toString() + (nextExpectedFragmentIndex - 1).toString())
               ).then(() => {
                 console.log("chunk out of sequence error thrown");
               });
               return;
             }
 
-            const fragmentData = decodedString.substring(1);
+            const fragmentData = decodedString.substring(FRAGMENT_INDEX_SIZE);
             fragmentArray.push(fragmentData);
             bytesRemainingToCompleteSample -= fragmentData.length;
+            totalFragmentsReceived++;
             nextExpectedFragmentIndex++;
+
             if (nextExpectedFragmentIndex >= 0xFFFF) {
               nextExpectedFragmentIndex = 0;
             }
@@ -156,22 +182,10 @@ const Monitor = ({ navigation }: Props) => {
               bytesRemainingToCompleteSample = READING_SAMPLE_LENGTH;
             }
           }
-
-          // Periodically send an acknowledgement to the device for the data we received
-          setTimeout(() => {
-            BLEService.writeCharacteristicWithoutResponseForDevice(
-              TRANSFER_SERVICE,
-              DATA_COMMUNICATION_CHARACTERISTIC,
-              base64.encode(0x01.toString() + (nextExpectedFragmentIndex - 1).toString())
-            ).then(() => {
-              console.log("wrote to transfer request char");
-            });
-          }, 5000);
         },
         async (error) => {
           console.error(error);
-          setMonitoring(false);
-          BLEService.finishMonitor();
+          finishMonitoring();
         }
       );
     }).catch((e) => {
@@ -199,6 +213,12 @@ const Monitor = ({ navigation }: Props) => {
       }
     }
   };
+
+  const finishMonitoring = () => {
+    setMonitoring(false);
+    clearInterval(sendTransferStatusInterval);
+    BLEService.finishMonitor();
+  }
 
   return (
     <PageView refresh={device ? refreshDevice : undefined}>
