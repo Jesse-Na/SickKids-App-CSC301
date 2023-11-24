@@ -1,8 +1,8 @@
 import { API, Amplify, Auth } from 'aws-amplify';
-import base64 from "react-native-base64";
 import { DeviceId } from "react-native-ble-plx";
 import { DBService } from "./DBService";
 import { DEFAULT_READ_INTERVAL } from '../utils/constants';
+import { convertBase64ToHex } from '@src/utils/utils';
 
 const adminUrl = "https://xbs8qyjek5.execute-api.ca-central-1.amazonaws.com/dev/admin";
 const userUrl = "https://xbs8qyjek5.execute-api.ca-central-1.amazonaws.com/dev/users";
@@ -41,14 +41,7 @@ class APIServiceInstance {
     // Get reading interval from backend and update cloudSyncInfo table with new interval
     getReadingInterval = async (bleInterfaceId: string) => {
         const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
-
-        const raw = base64.decode(cloudSyncInfo.device_id);
-        let hexId = "";
-        for (let i = 0; i < raw.length; i++) {
-            const hex = raw.charCodeAt(i).toString(16).toUpperCase();
-            hexId += hex.length === 2 ? hex : "0" + hex;
-        }
-        console.log("id", hexId);
+        const hexId = convertBase64ToHex(cloudSyncInfo.device_id);
 
         const interval = API.get("UserBackend", "/interval", {
             queryStringParameters: {
@@ -77,7 +70,7 @@ class APIServiceInstance {
     syncToCloudForDevice = async (bleInterfaceId: string) => {
         const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
         const readings = await DBService.getReadings(cloudSyncInfo.device_id, cloudSyncInfo.last_synced_id);
-        const hexId = this.convertBase64ToHex(cloudSyncInfo.device_id);
+        const hexId = convertBase64ToHex(cloudSyncInfo.device_id);
 
         API.post("UserBackend", "/readings", {
             body: {
@@ -115,7 +108,7 @@ class APIServiceInstance {
         }
 
         const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
-        const hexId = this.convertBase64ToHex(cloudSyncInfo.device_id);
+        const hexId = convertBase64ToHex(cloudSyncInfo.device_id);
         console.log("id", hexId);
 
         const apiKey = await API.post("AdminBackend", "/register-device", {
@@ -145,16 +138,6 @@ class APIServiceInstance {
         return apiKey;
     };
 
-    convertBase64ToHex = (base64Str: string) => {
-        const raw = base64.decode(base64Str);
-        let hexId = "";
-        for (let i = 0; i < raw.length; i++) {
-            const hex = raw.charCodeAt(i).toString(16).toUpperCase();
-            hexId += hex.length === 2 ? hex : "0" + hex;
-        }
-
-        return hexId;
-    }
 }
 
 export const APIService = new APIServiceInstance();

@@ -11,13 +11,14 @@ import ReadingInterval from "./ReadingInterval";
 import { BLEService } from "@src/services/BLEService";
 import { APIService } from "@src/services/APIService";
 import { DATA_COMMUNICATION_CHARACTERISTIC, DATA_TRANSFER_ACK_INTERVAL, DATA_TRANSFER_FIN, DATA_TRANSFER_OK, DATA_TRANSFER_OUT_OF_ORDER, DATA_TRANSFER_START, DATA_TRANSFER_TIMEOUT, FRAGMENT_INDEX_SIZE, RAW_DATA_CHARACTERISTIC, READING_SAMPLE_LENGTH, TRANSFER_SERVICE } from "../../utils/constants";
-import base64 from "react-native-base64";
 import { DBService } from "@src/services/DBService";
 import { Buffer } from "buffer";
 import {
   useBLEContext,
   defaultDeviceProperties,
 } from "@src/context/BLEContextProvider";
+import base64 from "react-native-base64";
+import { combineBytes, convertHexToBase64 } from "@src/utils/utils";
 type Props = NativeStackScreenProps<DeviceStackParamList, "Monitor">;
 
 let sendTransferAckInterval: string | number | NodeJS.Timer | undefined;
@@ -33,10 +34,6 @@ const Monitor = ({ navigation }: Props) => {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [deviceUniqueId, setDeviceUniqueId] = useState<string | null>(null);
   const [isMonitoring, setMonitoring] = useState<boolean>(false);
-
-  const combineBytes = (bytes: Buffer, from: number, to: number) => {
-    return bytes.subarray(from, to).reduce((a, p) => 256 * a + p, 0);
-  };
 
   const decodeDataCharacteristic = (characteristicValue: string) => {
     const decoded = base64.decode(characteristicValue);
@@ -113,8 +110,9 @@ const Monitor = ({ navigation }: Props) => {
       BLEService.writeCharacteristicWithoutResponseForDevice(
         TRANSFER_SERVICE,
         DATA_COMMUNICATION_CHARACTERISTIC,
-        base64.encode(DATA_TRANSFER_OK.toString() + (nextExpectedFragmentIndex - 1).toString())
+        convertHexToBase64(DATA_TRANSFER_OK.toString(16) + (nextExpectedFragmentIndex - 1).toString(16))
       ).then(() => {
+        console.log(convertHexToBase64(DATA_TRANSFER_OK.toString(16) + (nextExpectedFragmentIndex - 1).toString(16)))
         console.log("acknowledged fragments up to and including: ", nextExpectedFragmentIndex - 1);
       }).catch((e) => {
         console.error(e);
@@ -131,13 +129,13 @@ const Monitor = ({ navigation }: Props) => {
       }
     }, DATA_TRANSFER_TIMEOUT);
 
-    console.log(DATA_TRANSFER_START.toString())
-    console.log(base64.encode(DATA_TRANSFER_START.toString()))
+    console.log(DATA_TRANSFER_START.toString(16))
+    console.log(convertHexToBase64(DATA_TRANSFER_START.toString(16)))
 
     BLEService.writeCharacteristicWithoutResponseForDevice(
       TRANSFER_SERVICE,
       DATA_COMMUNICATION_CHARACTERISTIC,
-      base64.encode(DATA_TRANSFER_START.toString())
+      convertHexToBase64(DATA_TRANSFER_START.toString(16))
     ).then(() => {
       console.log("wrote to transfer request char");
       BLEService.setupMonitor(
@@ -158,8 +156,9 @@ const Monitor = ({ navigation }: Props) => {
                 BLEService.writeCharacteristicWithoutResponseForDevice(
                   TRANSFER_SERVICE,
                   DATA_COMMUNICATION_CHARACTERISTIC,
-                  base64.encode(DATA_TRANSFER_OK.toString()  + DATA_TRANSFER_FIN.toString())
+                  convertHexToBase64(DATA_TRANSFER_OK.toString(16) + DATA_TRANSFER_FIN.toString(16))
                 ).then(() => {
+                  console.log(convertHexToBase64(DATA_TRANSFER_OK.toString(16) + DATA_TRANSFER_FIN.toString(16)))
                   console.log("acknowledged termination");
                 })
                 finishMonitoring();
@@ -172,8 +171,9 @@ const Monitor = ({ navigation }: Props) => {
               BLEService.writeCharacteristicWithoutResponseForDevice(
                 TRANSFER_SERVICE,
                 DATA_COMMUNICATION_CHARACTERISTIC,
-                base64.encode(DATA_TRANSFER_OUT_OF_ORDER.toString() + (nextExpectedFragmentIndex - 1).toString())
+                convertHexToBase64(DATA_TRANSFER_OUT_OF_ORDER.toString(16) + (nextExpectedFragmentIndex - 1).toString(16))
               ).then(() => {
+                console.log(convertHexToBase64(DATA_TRANSFER_OUT_OF_ORDER.toString(16) + (nextExpectedFragmentIndex - 1).toString(16)))
                 console.log("chunk out of sequence error thrown");
               });
               return;
