@@ -20,6 +20,9 @@ import {
 } from "@src/context/BLEContextProvider";
 type Props = NativeStackScreenProps<DeviceStackParamList, "Monitor">;
 
+let sendTransferAckInterval: string | number | NodeJS.Timer | undefined;
+let transferTimeoutInterval: string | number | NodeJS.Timer | undefined;
+
 const Monitor = ({ navigation }: Props) => {
   const { device, setDevice, deviceProperties, setDeviceProperties } =
     useBLEContext();
@@ -30,8 +33,6 @@ const Monitor = ({ navigation }: Props) => {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [deviceUniqueId, setDeviceUniqueId] = useState<string | null>(null);
   const [isMonitoring, setMonitoring] = useState<boolean>(false);
-  const [sendTransferAckInterval, setSendTransferAckInterval] = useState<any>(null);
-  const [transferTimeoutInterval, setTransferTimeoutInterval] = useState<any>(null);
 
   const combineBytes = (bytes: Buffer, from: number, to: number) => {
     return bytes.subarray(from, to).reduce((a, p) => 256 * a + p, 0);
@@ -107,7 +108,7 @@ const Monitor = ({ navigation }: Props) => {
     let fragmentArray: string[] = [];
     let bytesRemainingToCompleteSample = READING_SAMPLE_LENGTH;
 
-    setSendTransferAckInterval(setInterval(() => {
+    sendTransferAckInterval = setInterval(() => {
       // Send an acknowledgement to the device that we successfully received the message
       BLEService.writeCharacteristicWithoutResponseForDevice(
         TRANSFER_SERVICE,
@@ -115,17 +116,23 @@ const Monitor = ({ navigation }: Props) => {
         base64.encode(DATA_TRANSFER_OK.toString() + (nextExpectedFragmentIndex - 1).toString())
       ).then(() => {
         console.log("acknowledged fragments up to and including: ", nextExpectedFragmentIndex - 1);
+      }).catch((e) => {
+        console.error(e);
+        finishMonitoring();
       });
-    }, DATA_TRANSFER_ACK_INTERVAL));
+    }, DATA_TRANSFER_ACK_INTERVAL);
 
-    setTransferTimeoutInterval(setInterval(() => {
+    transferTimeoutInterval = setInterval(() => {
       if (prevExpectedFragmentIndex === nextExpectedFragmentIndex) {
-        console.log("no fragments received in the last ", DATA_TRANSFER_TIMEOUT, " seconds, restarting");
+        console.log("no fragments received in the last ", DATA_TRANSFER_TIMEOUT, " seconds, stopping monitor");
         finishMonitoring();
       } else {
         prevExpectedFragmentIndex = nextExpectedFragmentIndex;
       }
-    }, DATA_TRANSFER_TIMEOUT));
+    }, DATA_TRANSFER_TIMEOUT);
+
+    console.log(DATA_TRANSFER_START.toString())
+    console.log(base64.encode(DATA_TRANSFER_START.toString()))
 
     BLEService.writeCharacteristicWithoutResponseForDevice(
       TRANSFER_SERVICE,
@@ -137,6 +144,7 @@ const Monitor = ({ navigation }: Props) => {
         TRANSFER_SERVICE,
         RAW_DATA_CHARACTERISTIC,
         async (characteristic) => {
+          console.log("received characteristic: ", characteristic)
           if (characteristic.value) {
             const decodedString = base64.decode(characteristic.value);
             const fragmentIndex = combineBytes(Buffer.from(decodedString), 0, FRAGMENT_INDEX_SIZE);
@@ -153,7 +161,7 @@ const Monitor = ({ navigation }: Props) => {
                   base64.encode(DATA_TRANSFER_OK.toString()  + DATA_TRANSFER_FIN.toString())
                 ).then(() => {
                   console.log("acknowledged termination");
-                });
+                })
                 finishMonitoring();
                 return;
               }
@@ -185,8 +193,10 @@ const Monitor = ({ navigation }: Props) => {
               // Compile fragments into sample and save to DB
               const sample = fragmentArray.join("").substring(0, READING_SAMPLE_LENGTH);
 
-              DBService.saveReading(sample, deviceUniqueId);
-              APIService.syncToCloudForDevice(device.id);
+              decodeDataCharacteristic(sample);
+              console.log("sample: ", sample);
+              // DBService.saveReading(sample, deviceUniqueId);
+              // APIService.syncToCloudForDevice(device.id);
 
               // Reset state
               fragmentArray = [];
@@ -201,6 +211,7 @@ const Monitor = ({ navigation }: Props) => {
       );
     }).catch((e) => {
       console.error(e);
+      finishMonitoring();
     });
 
   }, [device, apiKey, deviceUniqueId]);
@@ -226,7 +237,7 @@ const Monitor = ({ navigation }: Props) => {
   };
 
   const finishMonitoring = () => {
-    setMonitoring(false);
+    setMonitoring(true); // TEMPORARILY SET TO TRUE
     clearInterval(sendTransferAckInterval);
     clearInterval(transferTimeoutInterval);
     BLEService.finishMonitor();

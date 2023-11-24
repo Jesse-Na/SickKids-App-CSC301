@@ -133,8 +133,8 @@ class BLEServiceInstance {
 
                             // Negotiate MTU size
                             this.manager.requestMTUForDevice(device.id, DEFAULT_MTU_SIZE)
-                                .then(mtu => {
-                                    console.log("MTU negotiated: " + mtu)
+                                .then(device => {
+                                    console.log("MTU negotiated: ", device.mtu)
                                 }).catch(error => {
                                     console.error("Failed to negotiate MTU", error)
                                 })
@@ -168,9 +168,13 @@ class BLEServiceInstance {
                                                     });
 
                                                 if (!isCached) {
-                                                    DBService.insertCloudSyncInfo(cloudSyncInfo)
+                                                    DBService.insertCloudSyncInfo(cloudSyncInfo).catch(error => {
+                                                        console.error("Failed to cache cloud sync info for device", error)
+                                                    });
                                                 } else {
-                                                    DBService.updateCloudSyncInfoForDeviceId(cloudSyncInfo)
+                                                    DBService.updateCloudSyncInfoForDeviceId(cloudSyncInfo).catch(error => {
+                                                        console.error("Failed to update cached cloud sync info for device", error)
+                                                    });
                                                 }
                                             }).catch(error => {
                                                 console.error("Failed to get cloud sync info for device", error)
