@@ -1,4 +1,5 @@
 import base64 from "react-native-base64";
+import { Buffer } from "buffer";
 
 export const convertMsToString = (ms: number) => {
   const divisions = [1000, 60, 60, 24, 7, 4, 12, 52];
@@ -36,6 +37,21 @@ export const convertHexToBase64 = (hexString: string) => {
   const base64String = bytes.toString('base64');
 
   return base64String;
+}
+
+export const convertNumberToHex = (num: number, num_hex_digits: number = 2) => {
+  const hex = num.toString(16);
+
+  if (hex.length % num_hex_digits === 0) {
+    return hex;
+  }
+
+  let padding = ""
+  for (let i = 0; i < num_hex_digits - hex.length; i++) {
+    padding += "0";
+  }
+
+  return padding + hex;
 }
 
 export const combineBytes = (bytes: Buffer, from: number, to: number) => {

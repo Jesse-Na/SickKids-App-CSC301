@@ -10,7 +10,7 @@ import Connectivity from "./Connectivity";
 import ReadingInterval from "./ReadingInterval";
 import { BLEService } from "@src/services/BLEService";
 import { APIService } from "@src/services/APIService";
-import { DATA_COMMUNICATION_CHARACTERISTIC, DATA_TRANSFER_ACK_INTERVAL, DATA_TRANSFER_FIN, DATA_TRANSFER_OK, DATA_TRANSFER_OUT_OF_ORDER, DATA_TRANSFER_START, DATA_TRANSFER_TIMEOUT, FRAGMENT_INDEX_SIZE, RAW_DATA_CHARACTERISTIC, READING_SAMPLE_LENGTH, TRANSFER_SERVICE } from "../../utils/constants";
+import { DATA_COMMUNICATION_CHARACTERISTIC, DATA_TRANSFER_ACK_INTERVAL, DATA_TRANSFER_FIN, DATA_TRANSFER_OK, DATA_TRANSFER_OUT_OF_ORDER, DATA_TRANSFER_START, DATA_TRANSFER_TIMEOUT, FRAGMENT_INDEX_SIZE, RAW_DATA_CHARACTERISTIC, READING_SAMPLE_LENGTH, STATUS_CHARACTERISTIC, TRANSFER_SERVICE } from "../../utils/constants";
 import { DBService } from "@src/services/DBService";
 import { Buffer } from "buffer";
 import {
@@ -18,11 +18,12 @@ import {
   defaultDeviceProperties,
 } from "@src/context/BLEContextProvider";
 import base64 from "react-native-base64";
-import { combineBytes, convertHexToBase64 } from "@src/utils/utils";
+import { combineBytes, convertHexToBase64, convertNumberToHex } from "@src/utils/utils";
 type Props = NativeStackScreenProps<DeviceStackParamList, "Monitor">;
 
 let sendTransferAckInterval: string | number | NodeJS.Timer | undefined;
 let transferTimeoutInterval: string | number | NodeJS.Timer | undefined;
+let startTime = performance.now();
 
 const Monitor = ({ navigation }: Props) => {
   const { device, setDevice, deviceProperties, setDeviceProperties } =
@@ -94,12 +95,30 @@ const Monitor = ({ navigation }: Props) => {
       refreshDevice();
     }
 
+    BLEService.setupMonitor(
+      TRANSFER_SERVICE,
+      STATUS_CHARACTERISTIC,
+      async (characteristic) => {
+        if (characteristic.value) {
+          decodeDataCharacteristic(characteristic.value);
+        }
+      },
+      async (error) => {
+        console.error(error);
+        BLEService.finishMonitor();
+      }
+    );
+
     if (isMonitoring) {
       return;
     }
 
+    startTime = performance.now();
+    setMonitoring(true);
+
     // Write to Transfer Request Char to indicate we are ready to receive data
     let prevExpectedFragmentIndex = 0;
+    let lastReceivedFragmentIndex = DATA_TRANSFER_FIN;
     let nextExpectedFragmentIndex = 0;
     let totalFragmentsReceived = 0;
     let fragmentArray: string[] = [];
@@ -110,10 +129,9 @@ const Monitor = ({ navigation }: Props) => {
       BLEService.writeCharacteristicWithoutResponseForDevice(
         TRANSFER_SERVICE,
         DATA_COMMUNICATION_CHARACTERISTIC,
-        convertHexToBase64(DATA_TRANSFER_OK.toString(16) + (nextExpectedFragmentIndex - 1).toString(16))
+        convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OK) + convertNumberToHex(lastReceivedFragmentIndex, 4))
       ).then(() => {
-        console.log(convertHexToBase64(DATA_TRANSFER_OK.toString(16) + (nextExpectedFragmentIndex - 1).toString(16)))
-        console.log("acknowledged fragments up to and including: ", nextExpectedFragmentIndex - 1);
+        console.log("acknowledged fragments up to and including: ", lastReceivedFragmentIndex);
       }).catch((e) => {
         console.error(e);
         finishMonitoring();
@@ -121,47 +139,52 @@ const Monitor = ({ navigation }: Props) => {
     }, DATA_TRANSFER_ACK_INTERVAL);
 
     transferTimeoutInterval = setInterval(() => {
-      if (prevExpectedFragmentIndex === nextExpectedFragmentIndex) {
+      if (prevExpectedFragmentIndex === lastReceivedFragmentIndex) {
         console.log("no fragments received in the last ", DATA_TRANSFER_TIMEOUT, " seconds, stopping monitor");
         finishMonitoring();
       } else {
-        prevExpectedFragmentIndex = nextExpectedFragmentIndex;
+        prevExpectedFragmentIndex = lastReceivedFragmentIndex;
       }
     }, DATA_TRANSFER_TIMEOUT);
-
-    console.log(DATA_TRANSFER_START.toString(16))
-    console.log(convertHexToBase64(DATA_TRANSFER_START.toString(16)))
 
     BLEService.writeCharacteristicWithoutResponseForDevice(
       TRANSFER_SERVICE,
       DATA_COMMUNICATION_CHARACTERISTIC,
-      convertHexToBase64(DATA_TRANSFER_START.toString(16))
+      convertHexToBase64(convertNumberToHex(DATA_TRANSFER_START))
     ).then(() => {
       console.log("wrote to transfer request char");
       BLEService.setupMonitor(
         TRANSFER_SERVICE,
         RAW_DATA_CHARACTERISTIC,
-        async (characteristic) => {
-          console.log("received characteristic: ", characteristic)
+        (characteristic) => {
           if (characteristic.value) {
-            const decodedString = base64.decode(characteristic.value);
-            const fragmentIndex = combineBytes(Buffer.from(decodedString), 0, FRAGMENT_INDEX_SIZE);
+            const bufferForCharacteristic = Buffer.from(characteristic.value, "base64");
+            console.log("buffer: ", bufferForCharacteristic)
+            const fragmentIndex = combineBytes(bufferForCharacteristic, 0, FRAGMENT_INDEX_SIZE);
+            console.log("fragment index: ", fragmentIndex)
 
             // Check if the fragment is a termination fragment
             if (fragmentIndex === DATA_TRANSFER_FIN) {
               // Check if we have received all the fragments
-              const numFragmentsSentFromDevice = combineBytes(Buffer.from(decodedString), FRAGMENT_INDEX_SIZE, FRAGMENT_INDEX_SIZE + 2);
+              const numFragmentsSentFromDevice = combineBytes(bufferForCharacteristic, FRAGMENT_INDEX_SIZE, FRAGMENT_INDEX_SIZE + 2);
+              console.log(numFragmentsSentFromDevice)
               if (totalFragmentsReceived === numFragmentsSentFromDevice) {
                 // Acknowledge the termination fragment
                 BLEService.writeCharacteristicWithoutResponseForDevice(
                   TRANSFER_SERVICE,
                   DATA_COMMUNICATION_CHARACTERISTIC,
-                  convertHexToBase64(DATA_TRANSFER_OK.toString(16) + DATA_TRANSFER_FIN.toString(16))
+                  convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OK) + convertNumberToHex(DATA_TRANSFER_FIN, 4))
                 ).then(() => {
-                  console.log(convertHexToBase64(DATA_TRANSFER_OK.toString(16) + DATA_TRANSFER_FIN.toString(16)))
-                  console.log("acknowledged termination");
+                  console.log(convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OK) + convertNumberToHex(DATA_TRANSFER_FIN, 4)))
+                  console.log("acknowledged termination fragment");
                 })
-                finishMonitoring();
+
+                if (totalFragmentsReceived === 0) {
+                  finishMonitoring();
+                } else {
+                  resetMonitoring();
+                }
+
                 return;
               }
             }
@@ -171,19 +194,21 @@ const Monitor = ({ navigation }: Props) => {
               BLEService.writeCharacteristicWithoutResponseForDevice(
                 TRANSFER_SERVICE,
                 DATA_COMMUNICATION_CHARACTERISTIC,
-                convertHexToBase64(DATA_TRANSFER_OUT_OF_ORDER.toString(16) + (nextExpectedFragmentIndex - 1).toString(16))
+                convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER) + convertNumberToHex(lastReceivedFragmentIndex, 4))
               ).then(() => {
-                console.log(convertHexToBase64(DATA_TRANSFER_OUT_OF_ORDER.toString(16) + (nextExpectedFragmentIndex - 1).toString(16)))
+                console.log(convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER) + convertNumberToHex(lastReceivedFragmentIndex, 4)))
                 console.log("chunk out of sequence error thrown");
               });
               return;
             }
 
-            const fragmentData = decodedString.substring(FRAGMENT_INDEX_SIZE);
-            fragmentArray.push(fragmentData);
+            const fragmentData = bufferForCharacteristic.subarray(FRAGMENT_INDEX_SIZE, FRAGMENT_INDEX_SIZE + READING_SAMPLE_LENGTH);
+            console.log("fragment data: ", fragmentData)
+            fragmentArray.push(fragmentData.join(""));
             bytesRemainingToCompleteSample -= fragmentData.length;
             totalFragmentsReceived++;
             nextExpectedFragmentIndex++;
+            lastReceivedFragmentIndex = fragmentIndex;
 
             if (nextExpectedFragmentIndex >= DATA_TRANSFER_FIN) {
               nextExpectedFragmentIndex = 0;
@@ -193,9 +218,9 @@ const Monitor = ({ navigation }: Props) => {
               // Compile fragments into sample and save to DB
               const sample = fragmentArray.join("").substring(0, READING_SAMPLE_LENGTH);
 
-              decodeDataCharacteristic(sample);
+              // decodeDataCharacteristic(sample);
               console.log("sample: ", sample);
-              // DBService.saveReading(sample, deviceUniqueId);
+              DBService.saveReading(sample, deviceUniqueId);
               // APIService.syncToCloudForDevice(device.id);
 
               // Reset state
@@ -214,7 +239,7 @@ const Monitor = ({ navigation }: Props) => {
       finishMonitoring();
     });
 
-  }, [device, apiKey, deviceUniqueId]);
+  }, [device, apiKey, deviceUniqueId, isMonitoring]);
 
   const setReadingInterval = async (interval: number) => { };
 
@@ -236,8 +261,16 @@ const Monitor = ({ navigation }: Props) => {
     }
   };
 
+  const resetMonitoring = () => {
+    setMonitoring(false);
+    clearInterval(sendTransferAckInterval);
+    clearInterval(transferTimeoutInterval);
+    BLEService.finishMonitor();
+  }
+
   const finishMonitoring = () => {
-    setMonitoring(true); // TEMPORARILY SET TO TRUE
+    console.log("finished monitoring in", performance.now() - startTime);
+    setMonitoring(true);
     clearInterval(sendTransferAckInterval);
     clearInterval(transferTimeoutInterval);
     BLEService.finishMonitor();
