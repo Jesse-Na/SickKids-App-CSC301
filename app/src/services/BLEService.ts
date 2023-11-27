@@ -48,7 +48,16 @@ class BLEServiceInstance {
     isCharacteristicMonitorDisconnectExpected = false
 
     constructor() {
-        this.manager = new BleManager()
+        this.manager = new BleManager({
+            restoreStateIdentifier: 'BleInTheBackground',
+            restoreStateFunction: restoredState => {
+              if (restoredState == null) {
+                // BleManager was constructed for the first time.
+              } else {
+                // BleManager was restored. Check `restoredState.connectedPeripherals` property.
+              }
+            },
+          })
         this.manager.setLogLevel(LogLevel.Verbose)
         this.initializeBLE()
     }

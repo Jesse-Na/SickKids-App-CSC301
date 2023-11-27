@@ -7,7 +7,6 @@ import Battery from "./Battery";
 import PageView from "../../components/PageView";
 import HeartRate from "./HeartRate";
 import Connectivity from "./Connectivity";
-import ReadingInterval from "./ReadingInterval";
 import { BLEService } from "@src/services/BLEService";
 import { APIService } from "@src/services/APIService";
 import { DATA_COMMUNICATION_CHARACTERISTIC, DATA_TRANSFER_ACK_INTERVAL, DATA_TRANSFER_FIN, DATA_TRANSFER_OK, DATA_TRANSFER_OUT_OF_ORDER, DATA_TRANSFER_START, DATA_TRANSFER_TIMEOUT, FRAGMENT_INDEX_SIZE, RAW_DATA_CHARACTERISTIC, READING_SAMPLE_LENGTH, STATUS_CHARACTERISTIC, TRANSFER_SERVICE } from "../../utils/constants";
@@ -301,7 +300,6 @@ const Monitor = ({ navigation }: Props) => {
           <Battery batteryLevel={batteryLevel} charging={isCharging} />
           <HeartRate heartRate={heartRate} device={device} />
           <Connectivity device={device} />
-          <ReadingInterval />
         </View>
       )}
     </PageView>
