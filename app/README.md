@@ -149,3 +149,31 @@ CHAR_PROP_READ: Yes
 CHAR_PROP_WRITE_WITHOUT_RESP: Yes
 GATT_NOTIFY_WRITE_REQ_AND_WAIT_FOR_APPL_RESP: No
 GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP: No
+
+# Data Sample Format
+Each data sample consists of 167 bytes in total.
+
+| Name       | Description                           | Units     | Datatype (BE) | Byte Offset | Example    |
+| ---------- | ------------------------------------- | --------- | ------------- | ----------- | ---------- |
+| timestamp  | Unix time                             | s         | S32           | 0           | 1699553827 |
+| soc        | Battery state of charge               | %         | U8            | 4           | 87         |
+| vcell      | ADC measurement of battery            | 20 mV     | U8            | 5           | 180        |
+| crate      | Rate of (dis)charge                   | %/hour    | S8            | 6           | \-4        |
+| chgstat    | Charger status                        |           | U8            | 7           | 0          |
+| touch[0]   | Touch sensor 1 delta                  |           | S16           | 8           | 6890       |
+| touch[1]   | Touch sensor 2 delta                  |           | S16           | 10          | \-890      |
+| eda        | Electrodermal activity                | ADC count | U16           | 12          | 4000       |
+| hr         | Heartrate                             | bpm       | U8            | 14          | 87         |
+| confidence | Heartrate confidence level            | %         | U8            | 15          | 50         |
+| scd        | Skin contact detection                |           | U8            | 16          | 3          |
+|            | Acceleration (25 samples, 1s @ 25 Hz) |           |               |             |            |
+| accelX[0]  |                                       | mg        | S16           | 17          | 283        |
+| accelY[0]  |                                       | mg        | S16           | 19          | \-15       |
+| accelZ[0]  |                                       | mg        | S16           | 21          | 971        |
+| accelX[1]  |                                       | mg        | S16           | 23          | 271        |
+| accelY[1]  |                                       | mg        | S16           | 25          | \-7        |
+| accelZ[1]  |                                       | mg        | S16           | 27          | 982        |
+|            | …                                     |           |               |             |            |
+| accelX[24] |                                       | mg        | S16           | 161         | \-102      |
+| accelY[24] |                                       | mg        | S16           | 163         | \-955      |
+| accelZ[24] |                                       | mg        | S16           | 165         | \-218      |

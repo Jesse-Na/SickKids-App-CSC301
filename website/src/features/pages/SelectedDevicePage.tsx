@@ -8,6 +8,7 @@ import { convertMsToString } from "../../utils/time.utils";
 import DeviceDataTable from "../selectedDevice/DeviceDataTable";
 import EditDevicePopup from "../selectedDevice/EditDevicePopup";
 import DisableDevicePopup from "../selectedDevice/DisableDevicePopup";
+import SyncAlertPopup from "../selectedDevice/SyncAlertPopup";
 
 type Props = {};
 
@@ -40,6 +41,8 @@ export default function SelectedDevicePage({}: Props) {
     useState<boolean>(false);
   const [disableDevicePopupOpen, setDisableDevicePopupOpen] =
     useState<boolean>(false);
+  const [syncAlertPopupOpen, setSyncAlertPopupOpen] = 
+    useState<boolean>(false);
 
   const hasReadings = !!device?.lastSynced;
 
@@ -51,6 +54,10 @@ export default function SelectedDevicePage({}: Props) {
       .then((device) => {
         setDevice(device);
         setLoading(false);
+        const lastSynced = moment(device.lastSynced);
+        if (moment().diff(lastSynced, 'hours') > 24) {
+          setSyncAlertPopupOpen(true);
+        }
       })
       .catch((err) => {
         console.log("ERROR", err);
@@ -138,7 +145,12 @@ export default function SelectedDevicePage({}: Props) {
         open={disableDevicePopupOpen}
         handleClose={() => setDisableDevicePopupOpen(false)}
       />
-      {/*
+      <SyncAlertPopup
+        open={syncAlertPopupOpen}
+        handleClose={() => setSyncAlertPopupOpen(false)}
+        device={device}
+      />
+      {/*       
       <UserGraphs userData={userData} />
       <UserDataTable
         userData={userData}
