@@ -25,18 +25,20 @@ describe("My First Cypress Test", () => {
     cy.get(".MuiTableBody-root > :nth-child(1) > :nth-child(1)").click();
 
     // if acknowledge button exists, click it
-    cy.get("body").then(($body) => {
-      // Check if the element exists in the DOM
-      if (
-        $body.find(".MuiDialogActions-root > .MuiButtonBase-root").length > 0
-      ) {
-        // Element exists, perform some actions
-        cy.get(".MuiDialogActions-root > .MuiButtonBase-root").click();
-      } else {
-        // Element does not exist, perform alternate actions
-        cy.log("warning already clicked");
-      }
-    });
+    // cy.get("body").then(($body) => {
+    //   // Check if the element exists in the DOM
+    //   if (
+    //     $body.find(".MuiBox-root > .MuiButtonBase-root").length > 0
+    //   ) {
+    //     // Element exists, perform some actions
+    //     cy.get(".MuiBox-root > .MuiButtonBase-root").click();
+    //   } else {
+    //     // Element does not exist, perform alternate actions
+    //     cy.log("warning already clicked");
+    //   }
+    // });
+
+    cy.get('.MuiBox-root > .MuiButtonBase-root').click();
     
   });
 });

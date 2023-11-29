@@ -18,29 +18,18 @@ describe("My First Cypress Test", () => {
     
     // click device button
     cy.get('[style="display: flex; padding-left: 60px;"] > :nth-child(1)').click();
-
+    
     // click first device
     cy.get('.MuiTableBody-root > :nth-child(1) > :nth-child(1)').click();
 
     // if acknowledge button exists, click it
-    cy.get("body").then(($body) => {
-      // Check if the element exists in the DOM
-      if (
-        $body.find(".MuiDialogActions-root > .MuiButtonBase-root").length > 0
-      ) {
-        // Element exists, perform some actions
-        cy.get(".MuiDialogActions-root > .MuiButtonBase-root").click();
-      } else {
-        // Element does not exist, perform alternate actions
-        cy.log("warning already clicked");
-      }
-    });
+    cy.get('.MuiBox-root > .MuiButtonBase-root').click();
     
     // click edit button
-    cy.get('.App > :nth-child(2) > :nth-child(2)').click();
+    cy.get('[style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px;"] > .MuiButton-containedPrimary').click();
     
     // change frequency
-    cy.get('#\\:r1n\\:').type("1");
+    cy.get('#\\:r1o\\:').type("1");
 
     // click save button
     cy.get('.MuiDialogActions-root > :nth-child(2)').click();
