@@ -3,7 +3,6 @@ import {
   CreateDateColumn,
   Entity,
   ManyToOne,
-  PrimaryColumn,
   PrimaryGeneratedColumn,
 } from "typeorm";
 import Patient from "./patient.entity";

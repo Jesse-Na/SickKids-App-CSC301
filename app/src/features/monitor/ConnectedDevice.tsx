@@ -1,18 +1,18 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import React, { useMemo } from "react";
-import DevicePreview from "@BLE/components/DevicePreview";
+import { StyleSheet, Text, View } from "react-native";
+import React from "react";
+import DevicePreview from "../../components/DevicePreview";
 import { Ionicons } from "@expo/vector-icons";
 import Card from "../../components/Card";
-import useBLE from "@BLE/useBLE";
+import { useBLEContext } from "@src/context/BLEContextProvider";
 
 type Props = {
   goToDevice: () => void;
 };
 
 const ConnectedDevice = (props: Props) => {
-  const BLE = useBLE();
+  const { device } = useBLEContext();
 
-  if (!BLE.device)
+  if (!device)
     return (
       <View style={{ marginHorizontal: 20 }}>
         <Card height={50} onPress={props.goToDevice} width={350}>
@@ -30,7 +30,7 @@ const ConnectedDevice = (props: Props) => {
 
   return (
     <DevicePreview
-      device={BLE.device}
+      device={device}
       onPress={props.goToDevice}
       showState
       showChevron

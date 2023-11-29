@@ -1,4 +1,3 @@
-import React from "react";
 import DevicesTable from "../allDevices/DevicesTable";
 
 type Props = {};

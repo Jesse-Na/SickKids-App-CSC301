@@ -4,14 +4,13 @@ import serverless from "serverless-http";
 import getDatabase from "../database/db";
 import Device from "../database/device.entity";
 import Reading from "../database/reading.entity";
-import APIKey from "../database/api-key.entity";
-import { getDeviceFromApiKey } from "../utils/device.utils";
+import {  } from "../utils/device.utils";
 import dotenv from "dotenv";
-import UserDeviceUsage from "../database/user-device.entity";
+import PatientDeviceHistory from "../database/patient-device-history.entity";
 import Patient from "../database/patient.entity";
 import moment from "moment";
 import {
-  generateAPIKey,
+  getOrCreateAPIKey,
   getOrCreateDevice,
   getOrRegisterPatient,
 } from "../utils/admin.utils";
@@ -39,8 +38,7 @@ app.get("/admin/devices", async function (req, res) {
         "reading",
         "reading.id = (SELECT id FROM reading WHERE reading.deviceId = device.id ORDER BY reading.deviceSynced DESC LIMIT 1)"
       )
-      .leftJoinAndSelect("device.apiKey", "apiKey")
-      .leftJoinAndSelect("device.users", "user", "user.removed IS NULL")
+      .leftJoinAndSelect("device.patientHistory", "user", "user.removed IS NULL")
       .leftJoinAndSelect("user.patient", "patient")
       .getMany();
     console.log("got devices", JSON.stringify(latestReadingQuery));
@@ -51,8 +49,9 @@ app.get("/admin/devices", async function (req, res) {
         name: device.name,
         lastSynced:
           device.readings.length > 0 ? device.readings[0].deviceSynced : null,
-        lastReset: device.apiKey ? device.apiKey.createdAt : null,
-        user: device.users.length > 0 ? device.users[0].patient.id : null,
+        lastReset: device.createdAt,
+        user: device.patientHistory.length > 0 ? device.patientHistory[0].patient.id : null,
+        frequency: device.frequency,
       }))
     );
   } catch (e) {
@@ -75,8 +74,7 @@ app.get("/admin/device/:deviceId", async function (req, res) {
         "reading",
         "reading.id = (SELECT id FROM reading WHERE reading.deviceId = device.id ORDER BY reading.deviceSynced DESC LIMIT 1)"
       )
-      .leftJoinAndSelect("device.apiKey", "apiKey")
-      .leftJoinAndSelect("device.users", "user", "user.removed IS NULL")
+      .leftJoinAndSelect("device.patientHistory", "user", "user.removed IS NULL")
       .leftJoinAndSelect("user.patient", "patient")
       .getOne();
 
@@ -87,8 +85,8 @@ app.get("/admin/device/:deviceId", async function (req, res) {
       name: device.name,
       lastSynced:
         device.readings.length > 0 ? device.readings[0].deviceSynced : null,
-      lastReset: device.apiKey ? device.apiKey.createdAt : null,
-      user: device.users.length > 0 ? device.users[0].patient.id : null,
+      lastReset: device.createdAt,
+      user: device.patientHistory.length > 0 ? device.patientHistory[0].patient.id : null,
     };
 
     res.send(formattedDevice);
@@ -121,11 +119,12 @@ app.put("/admin/device/:deviceId", async function (req, res) {
   const device = await db.getRepository(Device).findOne({
     where: { id: req.params.deviceId },
   });
-  const { interval, name } = req.body;
-  console.log({ device, interval, name });
-  if (!device || !interval || !name) return res.status(400).send();
+  const { interval, name, frequency } = req.body;
+  console.log({ device, interval, name, frequency });
+  if (!device || !interval || !name || !frequency) return res.status(400).send();
   device.interval = interval;
   device.name = name;
+  device.frequency = frequency;
   db.getRepository(Device).save(device);
   res.send(device);
 });
@@ -134,16 +133,13 @@ app.delete("/admin/device/:deviceId", async function (req, res) {
   const db = await getDatabase();
   const device = await db.getRepository(Device).findOne({
     where: { id: req.params.deviceId },
-    relations: { apiKey: true, users: { patient: true } },
+    relations: { patientHistory: { patient: true } },
   });
 
   if (!device) return res.status(400).send("No device found");
-  if (device.apiKey) {
-    await db.getRepository(APIKey).delete({ id: device.apiKey.id });
-  }
-  const activeUser = device.users?.find((user) => user.removed === null);
+  const activeUser = device.patientHistory?.find((user) => user.removed === null);
   if (activeUser) {
-    await db.getRepository(UserDeviceUsage).delete({
+    await db.getRepository(PatientDeviceHistory).delete({
       id: activeUser.id,
     });
   }
@@ -151,18 +147,22 @@ app.delete("/admin/device/:deviceId", async function (req, res) {
     await db.getRepository(Device).delete({ id: device.id });
     res.send(null);
   } catch (e) {
-    device.apiKey = null;
     res.send(device);
   }
 });
 
 app.get("/admin/linked-device", async function (req, res) {
   const apiKey = req.query.apiKey as string;
+  const deviceId = req.body.deviceId;
+  const db = await getDatabase();
+
   console.log("checking ", req.query);
   if (!req.query.apiKey) {
     return res.status(400).send("Api key required");
   }
-  const device = await getDeviceFromApiKey(apiKey);
+  const device = await db.getRepository(Device).findOne({
+    where: { id: deviceId },
+  });
 
   if (!device) {
     return res.status(400).send("Api key is invalid");
@@ -175,42 +175,43 @@ app.post("/admin/register-device", async function (req, res) {
   const { deviceId, interval, userId } = req.body;
   const device = await getOrCreateDevice(deviceId);
 
-  if (device.apiKey) {
-    await db.getRepository(APIKey).delete({ id: device.apiKey.id });
-    device.apiKey = null;
-  }
   if (interval) {
     device.interval = interval;
   }
   await db.getRepository(Device).save(device);
-  //generate api key
-  const newKey = await generateAPIKey(device);
-  //link to user and disable any old user
-  const activeUser = device.users?.find((u) => u.removed === null);
-  //create patient if not exists
+  // Get the singular api key stored in the db
+  const apiKey = await getOrCreateAPIKey();
+  // If there exists an active user associated with this device, we find it here by looking for a user that isn't "removed"
+  const activeUser = device.patientHistory?.find((u) => u.removed === null);
+  // Here, we create the patient entity for this patient if it does not already exist
   const patient = await getOrRegisterPatient(userId);
 
-  //reomove active user if exists and is not the same
+  // If an active user exists and the patient we want to register the device to doesn't, or the patient
+  // and active user aren't the same, we set the existing active user entry to "removed"
   if (
     (!patient && activeUser) ||
     (patient && activeUser && activeUser.patient.id !== userId)
   ) {
     console.log("removing active user");
     activeUser.removed = new Date();
-    await db.getRepository(UserDeviceUsage).save(activeUser);
+    await db.getRepository(PatientDeviceHistory).save(activeUser);
   }
 
-  //add new patient if exists and is not already active
+  // If there was no existing active user, or the active user was not the patient we want to register the device to,
+  // we create a new patient device history entity for our patient and device which we save to the DB
   if (!activeUser || patient.id != activeUser.patient.id) {
     console.log("adding new user");
-    const newUser = db.getRepository(UserDeviceUsage).create({
+    // Note that if the patient device combo already exists in PatientDeviceHistory, this updates the "removed" field
+    // to be null (default), so there will never be duplicate patient device combos in PatientDeviceHistory
+    const newUser = db.getRepository(PatientDeviceHistory).create({
       patient,
       device,
     });
-    await db.getRepository(UserDeviceUsage).save(newUser);
+    await db.getRepository(PatientDeviceHistory).save(newUser);
   }
-  console.log("creating new key", newKey);
-  return res.send(newKey);
+
+  console.log("sending user the api key", apiKey);
+  return res.send(apiKey);
 });
 
 app.get("/admin/patient/:patientId", async function (req, res) {
@@ -279,7 +280,7 @@ app.get("/admin/patientReadings/:patientId", async function (req, res) {
     .getRepository(Reading)
     .createQueryBuilder("reading")
     .leftJoinAndSelect("reading.device", "device")
-    .leftJoin("device.users", "user")
+    .leftJoin("device.patientHistory", "user")
     .leftJoin("user.patient", "patient")
     .where(
       "patient.id = :id AND reading.deviceSynced > user.created AND (user.removed IS NULL OR reading.deviceSynced < user.removed)",
@@ -325,7 +326,7 @@ app.get("/admin/patient/:patientId/battery", async function (req, res) {
     .createQueryBuilder("reading")
     .select(["reading.battery", "reading.timestamp"])
     .leftJoin("reading.device", "device")
-    .leftJoin("device.users", "user")
+    .leftJoin("device.patientHistory", "user")
     .leftJoin("user.patient", "patient")
     .where(
       "patient.id = :id AND reading.deviceSynced > user.created AND (user.removed IS NULL OR reading.deviceSynced < user.removed)",
@@ -350,7 +351,7 @@ app.get("/admin/patient/:patientId/dailyUsage", async function (req, res) {
     .createQueryBuilder("reading")
     .select("COUNT(reading.id), DATE(reading.timestamp)")
     .leftJoin("reading.device", "device")
-    .leftJoin("device.users", "user")
+    .leftJoin("device.patientHistory", "user")
     .leftJoin("user.patient", "patient")
     .where(
       "patient.id = :id AND reading.deviceSynced > user.created AND (user.removed IS NULL OR reading.deviceSynced < user.removed)",
@@ -378,6 +379,15 @@ app.get("/admin/patient/:patientId/dailyUsage", async function (req, res) {
 
   res.send(formattedReadingCount);
 });
+
+app.use((req, res, next) => {
+  console.log("404", req);
+  return res.set("Access-Control-Allow-Origin", "*").status(404).send({
+    reqPath: req.path,
+    error: "Not Found",
+  });
+});
+
 let devServer;
 if (process.env.NODE_ENV === "development")
   devServer = app.listen(4100, async () => {

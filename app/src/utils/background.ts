@@ -1,81 +1,51 @@
 import * as BackgroundFetch from "expo-background-fetch";
 import * as TaskManager from "expo-task-manager";
-
-import NetInfo from "@react-native-community/netinfo";
-import { launchForegroundService } from "./foregroundService";
 import { Platform } from "react-native";
-import moment from "moment";
-import { scheduleNotifications } from "./notifications";
-import BLE from "@BLE/ble";
-import { getActiveDevice } from "@BLE/storage/asyncStorage.utils";
+import { requestNotificationPermissions, sendLowBatteryNotification } from "./notifications";
+import { useBLEContext } from "@src/context/BLEContextProvider";
 
-const BACKGROUND_TASK = "sickkids-pts-background-task";
+const BATTERY_CHECK_TASK = "battery-check-task";
 
-export const checkStatusAsync = async () => {
-  const status = await BackgroundFetch.getStatusAsync();
-  const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK);
-  return {
-    status: BackgroundFetch.BackgroundFetchStatus[status ?? 0],
-    isRegistered,
+TaskManager.defineTask(BATTERY_CHECK_TASK, async () => {
+  const { deviceProperties } = useBLEContext();
+  if (deviceProperties?.batteryLevel) {
+    await sendLowBatteryNotification(deviceProperties.batteryLevel);
   };
-};
 
-TaskManager.defineTask(BACKGROUND_TASK, async () => {
-  console.log("Background task running", new Date().toISOString());
-  if (Platform.OS === "android") {
-    await launchForegroundService();
-  }
-  // const device = await getActiveDevice();
-  // if (
-  //   !device ||
-  //   Math.abs(moment(device.lastReading).diff(moment(), "hours")) > 3
-  // ) {
-  //   console.log(device?.lastReading);
-  //   await scheduleNotifications();
-  // }
+  return;
+})
 
-  try {
-    const { isConnected } = await NetInfo.fetch();
-    if (!isConnected) return BackgroundFetch.BackgroundFetchResult.NoData;
-    const activeDevice = await getActiveDevice();
-    if (!activeDevice) return BackgroundFetch.BackgroundFetchResult.NoData;
-    BLE.connectDevice(
-      activeDevice,
-      (storage) => {
-        console.log("updated storage", storage);
-      },
-      (state) => {
-        console.log("updated state", state);
-      }
-    );
-    return BackgroundFetch.BackgroundFetchResult.NewData;
-  } catch (error) {
-    return BackgroundFetch.BackgroundFetchResult.Failed;
-  }
-});
-
-export const registerBackgroundFetch = async () => {
-  // console.log('Registering background task');
-  console.log("registering");
-  const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_TASK);
-  console.log("Registering background task", isRegistered);
+export const registerBatteryBackgroundFetch = async () => {
+  const isRegistered = await TaskManager.isTaskRegisteredAsync(BATTERY_CHECK_TASK);
   if (isRegistered) {
-    // await unregisterBackgroundFetch();
-    return;
+    await unregisterBatteryBackgroundFetch();
   }
   try {
-    BackgroundFetch.registerTaskAsync(BACKGROUND_TASK, {
+    BackgroundFetch.registerTaskAsync(BATTERY_CHECK_TASK, {
       minimumInterval: 60 * 1,
       stopOnTerminate: false,
       startOnBoot: true,
     })
-      .then(() => console.log("TASK REGISTERED"))
+      .then(() => { console.log("battery task registered") })
       .catch((err) => console.log("err", err.message, Object.keys(err)));
   } catch (e) {
     console.log("error", e);
   }
-};
+}
 
-export const unregisterBackgroundFetch = () => {
-  return BackgroundFetch.unregisterTaskAsync(BACKGROUND_TASK);
+export const launchBackground = async () => {
+  // request permissions necessary to send notifications in background:
+  await requestNotificationPermissions();
+  if (Platform.OS === "android") {
+    // Launch the foreground serve (only available on android)
+    //await launchForegroundService();
+  }
+  await registerBatteryBackgroundFetch();
+
+  const registeredTasks = TaskManager.getRegisteredTasksAsync();
+
+}
+
+export const unregisterBatteryBackgroundFetch = async () => {
+  await BackgroundFetch.unregisterTaskAsync(BATTERY_CHECK_TASK);
 };

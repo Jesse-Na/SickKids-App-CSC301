@@ -8,10 +8,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import { Device } from "../../utils/types";
-import { convertMsToString } from "../../utils/time.utils";
-import { disableDevice, updateDevice } from "../../api";
+import { disableDevice } from "../../api";
 
 type Props = {
   open: boolean;

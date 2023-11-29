@@ -7,13 +7,12 @@ import getDatabase from "../database/db";
 import Device from "../database/device.entity";
 import Reading from "../database/reading.entity";
 import APIKey from "../database/api-key.entity";
-import { getDeviceFromApiKey } from "../utils/device.utils";
 import dotenv from "dotenv";
-import UserDeviceUsage from "../database/user-device.entity";
+import PatientDeviceHistory from "../database/patient-device-history.entity";
 import Patient from "../database/patient.entity";
 import moment from "moment";
 import {
-  generateAPIKey,
+  getOrCreateAPIKey,
   getOrCreateDevice,
   getOrRegisterPatient,
 } from "../utils/admin.utils";

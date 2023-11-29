@@ -1,20 +1,20 @@
 import { StyleSheet, Text, View } from "react-native";
 import React, { useEffect } from "react";
-import useBLE from "@BLE/useBLE";
 import Card from "../../components/Card";
 import { Ionicons } from "@expo/vector-icons";
+import { Device } from "react-native-ble-plx";
 
-type Props = {};
+type HeartRateProps = {
+  heartRate: number;
+  device: Device | null;
+};
 
-const heartRate = 120;
-
-const HeartRate = (props: Props) => {
-  const BLE = useBLE();
+const HeartRate: React.FC<HeartRateProps> = ({ heartRate, device }) => {
   const [isBig, setIsBig] = React.useState(false);
   const intervalRef = React.useRef<NodeJS.Timeout | null>(null);
-  const isConnected = BLE.state === "connected";
+
   useEffect(() => {
-    if (isConnected) {
+    if (device && heartRate) {
       intervalRef.current && clearInterval(intervalRef.current);
       intervalRef.current = setInterval(() => {
         setIsBig(true);
@@ -30,16 +30,16 @@ const HeartRate = (props: Props) => {
     } else {
       intervalRef.current && clearInterval(intervalRef.current);
     }
-  }, [heartRate, isConnected]);
+  }, [heartRate, device]);
   const size = isBig ? 100 : 96;
   return (
     <Card height={170} width={170}>
       <Text style={styles.title}>HeartRate</Text>
       <View style={{ height: 100 }}>
         <Ionicons
-          name={isConnected ? "heart" : "heart-dislike"}
+          name={device ? "heart" : "heart-dislike"}
           size={size}
-          color={isConnected ? "#b44" : "#aaa"}
+          color={device ? "#b44" : "#aaa"}
         />
       </View>
       <Text style={{ fontSize: 18 }}>{heartRate} bpm</Text>

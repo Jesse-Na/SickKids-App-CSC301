@@ -3,7 +3,7 @@ import serverless from "serverless-http";
 import { CreateReadingType, decodeReading } from "../utils/readings";
 import getDatabase from "../database/db";
 import Reading from "../database/reading.entity";
-import { getDeviceFromApiKey } from "../utils/device.utils";
+import Device from "../database/device.entity"
 import cors from "cors";
 import dotenv from "dotenv";
 import PatientReport from "../database/patient-reports.entity";
@@ -24,16 +24,22 @@ app.get("/users/health", function (req, res) {
  * @param req.body.readings
  */
 app.post("/users/readings", async function (req, res) {
-  const readings: CreateReadingType[] = req.body;
+  const readings: CreateReadingType[] = req.body.readings;
+  const deviceId = req.body.deviceId;
+  const db = await getDatabase();
+
   const apiKey = req.query.apiKey as string;
   if (!req.query.apiKey) {
     return res.status(401).send("Api key required");
   }
-  const device = await getDeviceFromApiKey(apiKey);
+  const device = await db.getRepository(Device).findOne({
+    where: { id: deviceId },
+  });
+
   console.log("device", device);
 
   if (!device) {
-    return res.status(401).send("Api key is invalid");
+    return res.status(401).send("Device with given deviceId not found");
   }
 
   if (readings.length == 0) {
@@ -49,7 +55,6 @@ app.post("/users/readings", async function (req, res) {
   } catch (e) {
     return res.status(400).send();
   }
-  const db = await getDatabase();
 
   //convert to entities and save
   const entities = decoded.map((reading) =>
@@ -62,23 +67,35 @@ app.post("/users/readings", async function (req, res) {
 
 app.get("/users/interval", async function (req, res) {
   const apiKey = req.query.apiKey as string;
+  const deviceId = req.body.deviceId;
+  const db = await getDatabase();
+
   if (!req.query.apiKey) {
     return res.status(401).send("Api key required");
   }
-  const device = await getDeviceFromApiKey(apiKey);
+  const device = await db.getRepository(Device).findOne({
+    where: { id: deviceId },
+  });
 
   if (!device) {
-    return res.status(401).send("Api key is invalid");
+    return res.status(401).send("Device with given deviceId not found");
   }
   return res.send(JSON.stringify(device.interval));
 });
 
 app.get("/users/selfReporting", async function (req, res) {
   const apiKey = req.query.apiKey as string;
+  const deviceId = req.body.deviceId;
+  const db = await getDatabase();
+
   if (!req.query.apiKey) {
     return res.status(401).send("Api key required");
   }
-  const device = await getDeviceFromApiKey(apiKey);
+
+  const device = await db.getRepository(Device).findOne({
+    where: { id: deviceId },
+  });
+
   if (!device) {
     return res.status(401).send("Api key is invalid");
   }
@@ -88,10 +105,16 @@ app.get("/users/selfReporting", async function (req, res) {
 
 app.post("/users/selfReporting", async function (req, res) {
   const apiKey = req.query.apiKey as string;
+  const deviceId = req.body.deviceId;
+  const db = await getDatabase();
+
   if (!req.query.apiKey) {
     return res.status(401).send("Api key required");
   }
-  const device = await getDeviceFromApiKey(apiKey);
+
+  const device = await db.getRepository(Device).findOne({
+    where: { id: deviceId },
+  });
 
   if (!device) {
     return res.status(401).send("Api key is invalid");
@@ -99,7 +122,6 @@ app.post("/users/selfReporting", async function (req, res) {
 
   const { date, minutes } = req.body;
   const formattedDate = moment(date).format("YYYY-MM-DD");
-  const db = await getDatabase();
   const patient = await db
     .getRepository(Patient)
     .createQueryBuilder("patient")

@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
-import ReadingsPerDay from "../graphs/ReadingsPerDay";
-import { getPatientBattery, getPatientDailyUsage } from "../../api";
+import { getPatientBattery } from "../../api";
 import BatteryPercentage from "../graphs/BatteryPercentage";
 
 type Props = {

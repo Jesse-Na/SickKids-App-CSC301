@@ -1,75 +1,143 @@
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import React, { useEffect, useMemo, useState } from "react";
-
+import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
 import ConnectedDevice from "./ConnectedDevice";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { DeviceStackParamList } from "../tabs/DeviceTab";
-import { API, Auth } from "aws-amplify";
 import Battery from "./Battery";
-import CustomButton from "../../components/CustomButton";
-import { LinearGradient } from "expo-linear-gradient";
 import PageView from "../../components/PageView";
-import useBLE from "@BLE/useBLE";
-import * as BLEDecode from "@BLE/bleDecode";
 import HeartRate from "./HeartRate";
 import Connectivity from "./Connectivity";
 import ReadingInterval from "./ReadingInterval";
-
+import { BLEService } from "@src/services/BLEService";
+import { APIService } from "@src/services/APIService";
+import { DATA_CHARACTERISTIC, DATA_USAGE_SERVICE } from "../../utils/constants";
+import base64 from "react-native-base64";
+import { DBService } from "@src/services/DBService";
+import { Buffer } from "buffer";
+import {
+  useBLEContext,
+  defaultDeviceProperties,
+} from "@src/context/BLEContextProvider";
 type Props = NativeStackScreenProps<DeviceStackParamList, "Monitor">;
 
 const Monitor = ({ navigation }: Props) => {
-  const BLE = useBLE();
+  const { device, setDevice, deviceProperties, setDeviceProperties } =
+    useBLEContext();
+  const { batteryLevel, isCharging, heartRate } =
+    deviceProperties || defaultDeviceProperties;
 
   const [apiKeyError, setApiKeyError] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [deviceUniqueId, setDeviceUniqueId] = useState<string | null>(null);
+  const [isMonitoring, setMonitoring] = useState<boolean>(false);
+
+  const combineBytes = (bytes: Buffer, from: number, to: number) => {
+    return bytes.subarray(from, to).reduce((a, p) => 256 * a + p, 0);
+  };
+
+  const decodeDataCharacteristic = (characteristicValue: string) => {
+    const decoded = base64.decode(characteristicValue);
+
+    const timestamp = combineBytes(Buffer.from(decoded), 0, 4) * 1000;
+    const touchSensor1: number = !Number.isNaN(decoded.charCodeAt(4))
+      ? decoded.charCodeAt(4)
+      : 0;
+    const touchSensor2: number = !Number.isNaN(decoded.charCodeAt(5))
+      ? decoded.charCodeAt(5)
+      : 0;
+    const battery: number = !Number.isNaN(decoded.charCodeAt(6))
+      ? decoded.charCodeAt(6)
+      : 0;
+    setDeviceProperties("batteryLevel", battery);
+
+    const heartRate: number = !Number.isNaN(decoded.charCodeAt(8))
+      ? decoded.charCodeAt(8)
+      : 0;
+
+    setDeviceProperties("heartRate", heartRate);
+
+    const isCharging: number = !Number.isNaN(decoded.charCodeAt(7))
+      ? decoded.charCodeAt(7)
+      : 0;
+    setDeviceProperties("isCharging", isCharging > 0);
+  };
 
   useEffect(() => {
-    if (BLE.device && BLE.state === "connected") {
-      refreshDevice();
-    } else {
+    if (!device) {
       setApiKeyError(null);
+      setDevice(null);
+      return;
     }
-  }, [BLE.device?.apiKey, BLE.state]);
+
+    setDevice(device);
+
+    if (!apiKey || !deviceUniqueId) {
+      // Get the API key and unique device ID for this device
+      DBService.getCloudSyncInfoForBleInterfaceId(device.id)
+      .then((info) => {
+        if (info.api_key && info.device_id) {
+          setDeviceUniqueId(info.device_id);
+          setApiKey(info.api_key);
+        } else {
+          console.log("not registered");
+          setApiKeyError(
+            "This device has not been registered, please contact an admin to enable it"
+          );
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+
+      return;
+    } else {
+      refreshDevice();
+    }
+
+    if (isMonitoring) {
+      return;
+    }
+
+    BLEService.setupMonitor(
+      DATA_USAGE_SERVICE,
+      DATA_CHARACTERISTIC,
+      async (characteristic) => {
+        if (characteristic.value) {
+          decodeDataCharacteristic(characteristic.value);
+          DBService.saveReading(characteristic.value, deviceUniqueId);
+          APIService.syncToCloudForDevice(device.id);
+        }
+      },
+      async (error) => {
+        console.error(error);
+        setMonitoring(false);
+        BLEService.finishMonitor();
+      }
+    );
+  }, [device, apiKey, deviceUniqueId]);
+
+  const setReadingInterval = async (interval: number) => {};
 
   const refreshDevice = async () => {
-    if (!BLE.device) return;
-    if (!BLE.device.apiKey) {
-      console.log("not registered");
-      setApiKeyError(
-        "This device has not been registered, please contact an admin to enable it"
-      );
-    } else {
-      try {
-        const resp = await API.get("UserBackend", "/interval", {
-          queryStringParameters: {
-            apiKey: BLE.device.apiKey,
-          },
-        });
-        BLE.setInterval(BLE.device.deviceId, parseInt(resp));
+    try {
+      if (device) {
+        const resp = await APIService.getReadingInterval(device.id);
+        setReadingInterval(parseInt(resp));
         setApiKeyError(null);
-      } catch (e: any) {
-        if (e.response.status === 401) {
-          setApiKeyError(
-            "Device has been disabled remotely, please contact an admin to re-enable it"
-          );
-        } else {
-          setApiKeyError(null);
-        }
+      }
+    } catch (e: any) {
+      if (e.response.status === 401) {
+        setApiKeyError(
+          "Device has been disabled remotely, please contact an admin to re-enable it"
+        );
+      } else {
+        setApiKeyError(null);
       }
     }
   };
 
-  const battery = useMemo(() => {
-    if (!BLE.lastMessage) {
-      return {
-        percentage: 0,
-        charging: false,
-      };
-    }
-    return BLEDecode.getBatteryFromBase64(BLE.lastMessage.value);
-  }, [BLE.lastMessage]);
-
   return (
-    <PageView refresh={BLE.device ? refreshDevice : undefined}>
+    <PageView refresh={device ? refreshDevice : undefined}>
       <ConnectedDevice
         goToDevice={() => {
           navigation.navigate("Connect");
@@ -90,12 +158,9 @@ const Monitor = ({ navigation }: Props) => {
             justifyContent: "center",
           }}
         >
-          <Battery
-            batteryLevel={battery.percentage}
-            charging={battery.charging}
-          />
-          <HeartRate />
-          <Connectivity />
+          <Battery batteryLevel={batteryLevel} charging={isCharging} />
+          <HeartRate heartRate={heartRate} device={device} />
+          <Connectivity device={device} />
           <ReadingInterval />
         </View>
       )}
@@ -104,5 +169,7 @@ const Monitor = ({ navigation }: Props) => {
 };
 
 export default Monitor;
+
+
 
 const styles = StyleSheet.create({});
