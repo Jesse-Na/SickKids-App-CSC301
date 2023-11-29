@@ -17,6 +17,7 @@
     "@types/react": "^18.2.6",
     "@types/react-dom": "^18.2.4",
     "aws-amplify": "^5.2.1",
+    "firebase-tools": "^12.9.1",
     "jwt-decode": "^3.1.2",
     "moment": "^2.29.4",
     "react": "^18.2.0",
