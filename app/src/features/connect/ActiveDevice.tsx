@@ -10,7 +10,7 @@ import { AuthState } from "../authentication/AuthWrapper";
 import ErrorMessage from "@src/components/ErrorMessage";
 import CustomTextInput from "@src/components/CustomTextInput";
 import { APIService } from "@src/services/APIService";
-import { API_KEY_CHARACTERISTIC, CONFIGURATION_SERVICE } from "../../utils/constants";
+import { API_KEY_CHARACTERISTIC_UUID, CONFIGURATION_SERVICE_UUID } from "../../utils/constants";
 import base64 from "react-native-base64";
 
 type Props = {
@@ -32,7 +32,7 @@ const ActiveDevice = (props: Props) => {
     APIService.registerDevice(device?.id ?? null, userId)
       .then((apiKey) => {
         // Write the API Key to the device
-        BLEService.writeCharacteristicWithoutResponseForDevice(CONFIGURATION_SERVICE, API_KEY_CHARACTERISTIC, base64.encode(apiKey))
+        BLEService.writeCharacteristicWithoutResponseForDevice(CONFIGURATION_SERVICE_UUID, API_KEY_CHARACTERISTIC_UUID, base64.encode(apiKey))
       })
       .then(() => {
         console.log("registered")

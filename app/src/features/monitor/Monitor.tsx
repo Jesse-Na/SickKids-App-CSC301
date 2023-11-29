@@ -9,7 +9,7 @@ import HeartRate from "./HeartRate";
 import Connectivity from "./Connectivity";
 import { BLEService } from "@src/services/BLEService";
 import { APIService } from "@src/services/APIService";
-import { DATA_COMMUNICATION_CHARACTERISTIC, DATA_TRANSFER_ACK_INTERVAL, DATA_TRANSFER_FIN, DATA_TRANSFER_OK, DATA_TRANSFER_OUT_OF_ORDER, DATA_TRANSFER_START, DATA_TRANSFER_TIMEOUT, FRAGMENT_INDEX_SIZE, RAW_DATA_CHARACTERISTIC, READING_SAMPLE_LENGTH, STATUS_CHARACTERISTIC, TRANSFER_SERVICE } from "../../utils/constants";
+import { DATA_COMMUNICATION_CHARACTERISTIC_UUID, DATA_TRANSFER_ACK_INTERVAL, DATA_TRANSFER_FIN_CODE, DATA_TRANSFER_OK_CODE, DATA_TRANSFER_OUT_OF_ORDER_CODE, DATA_TRANSFER_START_CODE, DATA_TRANSFER_TIMEOUT, FRAGMENT_INDEX_SIZE, RAW_DATA_CHARACTERISTIC_UUID, READING_SAMPLE_LENGTH, STATUS_CHARACTERISTIC_UUID, TRANSFER_SERVICE_UUID } from "../../utils/constants";
 import { DBService } from "@src/services/DBService";
 import { Buffer } from "buffer";
 import {
@@ -95,8 +95,8 @@ const Monitor = ({ navigation }: Props) => {
     }
 
     BLEService.setupMonitor(
-      TRANSFER_SERVICE,
-      STATUS_CHARACTERISTIC,
+      TRANSFER_SERVICE_UUID,
+      STATUS_CHARACTERISTIC_UUID,
       async (characteristic) => {
         if (characteristic.value) {
           decodeDataCharacteristic(characteristic.value);
@@ -117,7 +117,7 @@ const Monitor = ({ navigation }: Props) => {
 
     // Write to Transfer Request Char to indicate we are ready to receive data
     let prevExpectedFragmentIndex = 0;
-    let lastReceivedFragmentIndex = DATA_TRANSFER_FIN;
+    let lastReceivedFragmentIndex = DATA_TRANSFER_FIN_CODE;
     let nextExpectedFragmentIndex = 0;
     let totalFragmentsReceived = 0;
     let fragmentArray: string[] = [];
@@ -126,9 +126,9 @@ const Monitor = ({ navigation }: Props) => {
     sendTransferAckInterval = setInterval(() => {
       // Send an acknowledgement to the device that we successfully received the message
       BLEService.writeCharacteristicWithoutResponseForDevice(
-        TRANSFER_SERVICE,
-        DATA_COMMUNICATION_CHARACTERISTIC,
-        convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OK) + convertNumberToHex(lastReceivedFragmentIndex, 4))
+        TRANSFER_SERVICE_UUID,
+        DATA_COMMUNICATION_CHARACTERISTIC_UUID,
+        convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OK_CODE) + convertNumberToHex(lastReceivedFragmentIndex, 4))
       ).then(() => {
         console.log("acknowledged fragments up to and including: ", lastReceivedFragmentIndex);
       }).catch((e) => {
@@ -147,34 +147,30 @@ const Monitor = ({ navigation }: Props) => {
     }, DATA_TRANSFER_TIMEOUT);
 
     BLEService.writeCharacteristicWithoutResponseForDevice(
-      TRANSFER_SERVICE,
-      DATA_COMMUNICATION_CHARACTERISTIC,
-      convertHexToBase64(convertNumberToHex(DATA_TRANSFER_START))
+      TRANSFER_SERVICE_UUID,
+      DATA_COMMUNICATION_CHARACTERISTIC_UUID,
+      convertHexToBase64(convertNumberToHex(DATA_TRANSFER_START_CODE))
     ).then(() => {
       console.log("wrote to transfer request char");
       BLEService.setupMonitor(
-        TRANSFER_SERVICE,
-        RAW_DATA_CHARACTERISTIC,
+        TRANSFER_SERVICE_UUID,
+        RAW_DATA_CHARACTERISTIC_UUID,
         (characteristic) => {
           if (characteristic.value) {
             const bufferForCharacteristic = Buffer.from(characteristic.value, "base64");
-            console.log("buffer: ", bufferForCharacteristic)
             const fragmentIndex = combineBytes(bufferForCharacteristic, 0, FRAGMENT_INDEX_SIZE);
-            console.log("fragment index: ", fragmentIndex)
 
             // Check if the fragment is a termination fragment
-            if (fragmentIndex === DATA_TRANSFER_FIN) {
+            if (fragmentIndex === DATA_TRANSFER_FIN_CODE) {
               // Check if we have received all the fragments
               const numFragmentsSentFromDevice = combineBytes(bufferForCharacteristic, FRAGMENT_INDEX_SIZE, FRAGMENT_INDEX_SIZE + 2);
-              console.log(numFragmentsSentFromDevice)
               if (totalFragmentsReceived === numFragmentsSentFromDevice) {
                 // Acknowledge the termination fragment
                 BLEService.writeCharacteristicWithoutResponseForDevice(
-                  TRANSFER_SERVICE,
-                  DATA_COMMUNICATION_CHARACTERISTIC,
-                  convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OK) + convertNumberToHex(DATA_TRANSFER_FIN, 4))
+                  TRANSFER_SERVICE_UUID,
+                  DATA_COMMUNICATION_CHARACTERISTIC_UUID,
+                  convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OK_CODE) + convertNumberToHex(DATA_TRANSFER_FIN_CODE, 4))
                 ).then(() => {
-                  console.log(convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OK) + convertNumberToHex(DATA_TRANSFER_FIN, 4)))
                   console.log("acknowledged termination fragment");
                 })
 
@@ -191,11 +187,11 @@ const Monitor = ({ navigation }: Props) => {
             // Drop out of order fragments
             if (fragmentIndex !== nextExpectedFragmentIndex) {
               BLEService.writeCharacteristicWithoutResponseForDevice(
-                TRANSFER_SERVICE,
-                DATA_COMMUNICATION_CHARACTERISTIC,
-                convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER) + convertNumberToHex(lastReceivedFragmentIndex, 4))
+                TRANSFER_SERVICE_UUID,
+                DATA_COMMUNICATION_CHARACTERISTIC_UUID,
+                convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER_CODE) + convertNumberToHex(lastReceivedFragmentIndex, 4))
               ).then(() => {
-                console.log(convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER) + convertNumberToHex(lastReceivedFragmentIndex, 4)))
+                console.log(convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER_CODE) + convertNumberToHex(lastReceivedFragmentIndex, 4)))
                 console.log("chunk out of sequence error thrown");
               });
               return;
@@ -209,7 +205,7 @@ const Monitor = ({ navigation }: Props) => {
             nextExpectedFragmentIndex++;
             lastReceivedFragmentIndex = fragmentIndex;
 
-            if (nextExpectedFragmentIndex >= DATA_TRANSFER_FIN) {
+            if (nextExpectedFragmentIndex >= DATA_TRANSFER_FIN_CODE) {
               nextExpectedFragmentIndex = 0;
             }
 

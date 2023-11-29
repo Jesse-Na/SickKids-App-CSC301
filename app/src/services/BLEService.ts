@@ -33,7 +33,7 @@ import {
     type Subscription
 } from 'react-native-ble-plx'
 import { PermissionsAndroid, Platform } from 'react-native'
-import { API_KEY_CHARACTERISTIC, CONFIGURATION_SERVICE, DEFAULT_MTU_SIZE, DEFAULT_READ_INTERVAL, TRANSFER_SERVICE, UNIQUE_DEVICE_ID_CHARACTERISTIC } from '../utils/constants'
+import { API_KEY_CHARACTERISTIC_UUID, CONFIGURATION_SERVICE_UUID, DEFAULT_MTU_SIZE, DEFAULT_READ_INTERVAL, TRANSFER_SERVICE_UUID, UNIQUE_DEVICE_ID_CHARACTERISTIC_UUID } from '../utils/constants'
 import { DBService } from './DBService'
 
 const deviceNotConnectedErrorText = 'Device is not connected'
@@ -110,7 +110,7 @@ class BLEServiceInstance {
 
     scanAllDevices = async (onDeviceFound: (device: Device) => void) => {
         console.log("Scan started")
-        this.manager.startDeviceScan([TRANSFER_SERVICE], null, (error, device) => {
+        this.manager.startDeviceScan([TRANSFER_SERVICE_UUID], null, (error, device) => {
             if (error) {
                 this.onError(error)
                 console.error(error.message)
@@ -149,7 +149,7 @@ class BLEServiceInstance {
                                 })
 
                             // Read the device's unique ID
-                            this.readCharacteristicForDevice(CONFIGURATION_SERVICE, UNIQUE_DEVICE_ID_CHARACTERISTIC)
+                            this.readCharacteristicForDevice(CONFIGURATION_SERVICE_UUID, UNIQUE_DEVICE_ID_CHARACTERISTIC_UUID)
                                 .then(characteristic => {
                                     const deviceId = characteristic.value
                                     if (deviceId) {
@@ -166,7 +166,7 @@ class BLEServiceInstance {
                                                 }
 
                                                 // Read the device's API key if there is any and update cloudSyncInfo
-                                                this.readCharacteristicForDevice(CONFIGURATION_SERVICE, API_KEY_CHARACTERISTIC)
+                                                this.readCharacteristicForDevice(CONFIGURATION_SERVICE_UUID, API_KEY_CHARACTERISTIC_UUID)
                                                     .then(characteristic => {
                                                         const apiKey = characteristic.value
                                                         if (apiKey) {
