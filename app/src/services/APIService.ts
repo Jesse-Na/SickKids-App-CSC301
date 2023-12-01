@@ -1,7 +1,7 @@
 import { API, Amplify, Auth } from 'aws-amplify';
 import { DeviceId } from "react-native-ble-plx";
 import { DBService } from "./DBService";
-import { DEFAULT_READ_INTERVAL } from '../utils/constants';
+import { DEFAULT_READ_INTERVAL, DEVICE_TO_SERVER_BATCH_SIZE } from '../utils/constants';
 import { convertBase64ToHex } from '@src/utils/utils';
 
 const adminUrl = "https://xbs8qyjek5.execute-api.ca-central-1.amazonaws.com/dev/admin";
@@ -76,29 +76,34 @@ class APIServiceInstance {
         const readings = await DBService.getReadings(cloudSyncInfo.device_id, cloudSyncInfo.last_synced_id);
         const hexId = convertBase64ToHex(cloudSyncInfo.device_id);
 
-        API.post("UserBackend", "/readings", {
-            body: {
-                readings: readings.map((r) => ({
-                    synced: r.synced,
-                    message: r.message,
-                })),
-                deviceId: hexId,
-            },
-            queryStringParameters: {
-                apiKey: cloudSyncInfo.api_key,
-            },
-        })
-            .then(async ({ interval }) => {
-                await DBService.updateCloudSyncInfoForDeviceId({
-                    ...cloudSyncInfo,
-                    last_synced_id: readings[readings.length - 1].id,
-                    reading_interval: interval
-                });
-                return interval;
+        // Send readings to backend in batches at a time
+        while (readings.length > 0) {
+            const readingsBatch = readings.splice(0, DEVICE_TO_SERVER_BATCH_SIZE);
+
+            API.post("UserBackend", "/readings", {
+                body: {
+                    readings: readingsBatch.map((r) => ({
+                        synced: r.synced,
+                        message: r.message,
+                    })),
+                    deviceId: hexId,
+                },
+                queryStringParameters: {
+                    apiKey: cloudSyncInfo.api_key,
+                },
             })
-            .catch((e) => {
-                console.error("failed to sync", e);
-            });
+                .then(async ({ interval }) => {
+                    await DBService.updateCloudSyncInfoForDeviceId({
+                        ...cloudSyncInfo,
+                        last_synced_id: readingsBatch[readingsBatch.length - 1].id,
+                        reading_interval: interval
+                    });
+                    return interval;
+                })
+                .catch((e) => {
+                    console.error("failed to sync", e);
+                });
+        }
     }
 
     // Register device with backend and update cloudSyncInfo table with api key

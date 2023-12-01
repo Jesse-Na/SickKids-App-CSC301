@@ -112,7 +112,6 @@ const Monitor = ({ navigation }: Props) => {
       return;
     }
 
-    startTime = performance.now();
     setMonitoring(true);
 
     // Write to Transfer Request Char to indicate we are ready to receive data
@@ -158,6 +157,7 @@ const Monitor = ({ navigation }: Props) => {
         (characteristic) => {
           if (characteristic.value) {
             const bufferForCharacteristic = Buffer.from(characteristic.value, "base64");
+            console.log("buffer for characteristic: ", bufferForCharacteristic)
             const fragmentIndex = combineBytes(bufferForCharacteristic, 0, FRAGMENT_INDEX_SIZE);
             console.log("fragment index: ", fragmentIndex)
 
@@ -187,13 +187,18 @@ const Monitor = ({ navigation }: Props) => {
 
             // Drop out of order fragments
             if (fragmentIndex !== nextExpectedFragmentIndex) {
-              BLEService.writeCharacteristicWithoutResponseForDevice(
-                TRANSFER_SERVICE_UUID,
-                DATA_COMMUNICATION_CHARACTERISTIC_UUID,
-                convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER_CODE) + convertNumberToHex(lastReceivedFragmentIndex, 4))
-              ).then(() => {
-                console.log("chunk out of sequence error thrown");
-              });
+              // Only send out of order error if the fragment we received is larger than the last one we received
+              if (fragmentIndex > nextExpectedFragmentIndex) {
+                BLEService.writeCharacteristicWithoutResponseForDevice(
+                  TRANSFER_SERVICE_UUID,
+                  DATA_COMMUNICATION_CHARACTERISTIC_UUID,
+                  convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER_CODE) + convertNumberToHex(lastReceivedFragmentIndex, 4))
+                ).then(() => {
+                  console.log(convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER_CODE) + convertNumberToHex(lastReceivedFragmentIndex, 4)))
+                  console.log("chunk out of sequence error thrown");
+                });
+              }
+
               return;
             }
 
@@ -213,6 +218,7 @@ const Monitor = ({ navigation }: Props) => {
               // Compile fragments into sample and save to DB
               const sample = fragmentArray.join("").substring(0, READING_SAMPLE_LENGTH);
               DBService.saveReading(sample, deviceUniqueId);
+              APIService.syncToCloudForDevice(device.id);
 
               // Reset state
               fragmentArray = [];
