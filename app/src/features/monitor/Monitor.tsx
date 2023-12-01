@@ -191,7 +191,6 @@ const Monitor = ({ navigation }: Props) => {
                 DATA_COMMUNICATION_CHARACTERISTIC_UUID,
                 convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER_CODE) + convertNumberToHex(lastReceivedFragmentIndex, 4))
               ).then(() => {
-                console.log(convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER_CODE) + convertNumberToHex(lastReceivedFragmentIndex, 4)))
                 console.log("chunk out of sequence error thrown");
               });
               return;
@@ -212,11 +211,7 @@ const Monitor = ({ navigation }: Props) => {
             if (bytesRemainingToCompleteSample <= 0) {
               // Compile fragments into sample and save to DB
               const sample = fragmentArray.join("").substring(0, READING_SAMPLE_LENGTH);
-
-              // decodeDataCharacteristic(sample);
-              console.log("sample: ", sample);
               DBService.saveReading(sample, deviceUniqueId);
-              // APIService.syncToCloudForDevice(device.id);
 
               // Reset state
               fragmentArray = [];
