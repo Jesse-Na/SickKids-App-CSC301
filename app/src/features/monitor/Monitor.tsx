@@ -159,6 +159,7 @@ const Monitor = ({ navigation }: Props) => {
           if (characteristic.value) {
             const bufferForCharacteristic = Buffer.from(characteristic.value, "base64");
             const fragmentIndex = combineBytes(bufferForCharacteristic, 0, FRAGMENT_INDEX_SIZE);
+            console.log("fragment index: ", fragmentIndex)
 
             // Check if the fragment is a termination fragment
             if (fragmentIndex === DATA_TRANSFER_FIN_CODE) {
