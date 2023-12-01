@@ -67,7 +67,11 @@ class APIServiceInstance {
     }
 
     // Upload readings to backend and update cloudSyncInfo table with last synced id
-    syncToCloudForDevice = async (bleInterfaceId: string) => {
+    syncToCloudForDevice = async (bleInterfaceId: string | null) => {
+        if (!bleInterfaceId) {
+            return;
+        }
+
         const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
         const readings = await DBService.getReadings(cloudSyncInfo.device_id, cloudSyncInfo.last_synced_id);
         const hexId = convertBase64ToHex(cloudSyncInfo.device_id);

@@ -261,6 +261,7 @@ const Monitor = ({ navigation }: Props) => {
 
   const finishMonitoring = () => {
     console.log("finished monitoring in", performance.now() - startTime);
+    APIService.syncToCloudForDevice(device?.id ?? null);
     setMonitoring(true);
     clearInterval(sendTransferAckInterval);
     clearInterval(transferTimeoutInterval);

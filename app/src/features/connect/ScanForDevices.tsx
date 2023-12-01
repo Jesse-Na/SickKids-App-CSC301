@@ -50,19 +50,6 @@ const ScanForDevices = (props: Props) => {
     stopScan();
     BLEService.connectToDevice(deviceId)
       .then((device) => {
-        BLEService.readCharacteristicForDevice(CONFIGURATION_SERVICE_UUID, UNIQUE_DEVICE_ID_CHARACTERISTIC_UUID)
-          .then(characteristic => {
-            if (characteristic.value) {
-              const buff = base64.decode(characteristic.value);
-              console.log("Device Unique ID: ", buff.toString());
-            } else {
-              throw new Error('Read error')
-            }
-          })
-          .catch(error => {
-            console.error(error)
-          });
-
         setIsConnecting(false);
         props.goBack();
 
