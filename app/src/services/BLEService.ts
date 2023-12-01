@@ -130,58 +130,64 @@ class BLEServiceInstance {
                     device.discoverAllServicesAndCharacteristics()
                         .then(() => {
                             this.connectedDevice = device
-
+                        }).then(async () => {
                             // Negotiate MTU size
-                            this.manager.requestMTUForDevice(device.id, DEFAULT_MTU_SIZE)
+                            await this.manager.requestMTUForDevice(device.id, DEFAULT_MTU_SIZE)
                                 .then(device => {
                                     console.log("MTU negotiated: ", device.mtu)
                                 }).catch(error => {
                                     console.error("Failed to negotiate MTU", error)
                                 })
-
+                        }).then(async () => {
                             // Read the device's unique ID
-                            this.readCharacteristicForDevice(CONFIGURATION_SERVICE_UUID, UNIQUE_DEVICE_ID_CHARACTERISTIC_UUID)
+                            await this.readCharacteristicForDevice(CONFIGURATION_SERVICE_UUID, UNIQUE_DEVICE_ID_CHARACTERISTIC_UUID)
                                 .then(characteristic => {
                                     const deviceId = characteristic.value
                                     if (deviceId) {
-                                        // Check if the information the device needs to sync to the cloud is already cached
-                                        DBService.getCloudSyncInfoForDeviceId(deviceId)
-                                            .then(cloudSyncInfo => {
-                                                const isCached = cloudSyncInfo ? true : false
-                                                cloudSyncInfo = cloudSyncInfo ? cloudSyncInfo : {
-                                                    ble_interface_id: device.id,
-                                                    device_id: deviceId,
-                                                    last_synced_id: 0,
-                                                    api_key: null,
-                                                    reading_interval: DEFAULT_READ_INTERVAL
-                                                }
-
-                                                // Read the device's API key if there is any and update cloudSyncInfo
-                                                this.readCharacteristicForDevice(CONFIGURATION_SERVICE_UUID, API_KEY_CHARACTERISTIC_UUID)
-                                                    .then(characteristic => {
-                                                        const apiKey = characteristic.value
-                                                        if (apiKey) {
-                                                            cloudSyncInfo.api_key = apiKey
-                                                        }
-                                                    }).catch(error => {
-                                                        console.error("Failed to read device API key", error)
-                                                    });
-
-                                                if (!isCached) {
-                                                    DBService.insertCloudSyncInfo(cloudSyncInfo).catch(error => {
-                                                        console.error("Failed to cache cloud sync info for device", error)
-                                                    });
-                                                } else {
-                                                    DBService.updateCloudSyncInfoForDeviceId(cloudSyncInfo).catch(error => {
-                                                        console.error("Failed to update cached cloud sync info for device", error)
-                                                    });
-                                                }
-                                            }).catch(error => {
-                                                console.error("Failed to get cloud sync info for device", error)
-                                            });
-                                    } else {
-                                        throw new Error("Device unique ID is null")
+                                        return deviceId
                                     }
+
+                                    throw new Error("Device unique ID is null")
+                                }).then((deviceId) => {
+                                    // Check if the information the device needs to sync to the cloud is already cached
+                                    DBService.getCloudSyncInfoForDeviceId(deviceId)
+                                        .then(cloudSyncInfo => {
+                                            const isCached = cloudSyncInfo ? true : false
+                                            cloudSyncInfo = cloudSyncInfo ? cloudSyncInfo : {
+                                                ble_interface_id: device.id,
+                                                device_id: deviceId,
+                                                last_synced_id: 0,
+                                                api_key: null,
+                                                reading_interval: DEFAULT_READ_INTERVAL
+                                            }
+
+                                            return { cloudSyncInfo, isCached }
+                                        }).then(async ({ cloudSyncInfo, isCached }) => {
+                                            // Read the device's API key if there is any and update cloudSyncInfo
+                                            await this.readCharacteristicForDevice(CONFIGURATION_SERVICE_UUID, API_KEY_CHARACTERISTIC_UUID)
+                                                .then(characteristic => {
+                                                    const apiKey = characteristic.value
+                                                    if (apiKey) {
+                                                        cloudSyncInfo.api_key = apiKey
+                                                    }
+                                                }).catch(error => {
+                                                    console.error("Failed to read device API key", error)
+                                                });
+
+                                            return { cloudSyncInfo, isCached }
+                                        }).then(({ cloudSyncInfo, isCached }) => {
+                                            if (!isCached) {
+                                                DBService.insertCloudSyncInfo(cloudSyncInfo).catch(error => {
+                                                    console.error("Failed to cache cloud sync info for device", error)
+                                                });
+                                            } else {
+                                                DBService.updateCloudSyncInfoForDeviceId(cloudSyncInfo).catch(error => {
+                                                    console.error("Failed to update cached cloud sync info for device", error)
+                                                });
+                                            }
+                                        }).catch(error => {
+                                            console.error("Failed to get cloud sync info for device", error)
+                                        });
                                 }).catch(error => {
                                     console.error("Failed to read device unique ID", error)
                                 });
