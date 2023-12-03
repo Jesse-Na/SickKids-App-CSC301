@@ -1,7 +1,4 @@
-# TODO: update database username and password DB_USERNAME, DB_PASSWORD, MasterUsername, MasterUserPassword
-# Note: Each time you deploy the lambda functions, you have to go to the function on AWS and add the VPC (I just select all that's there)
-# This is so that they can access the database (should only be done for admin and user apis not the coginto one)
-org: ryanreszetnik
+org: # TODO: Add your Serverless org name here
 app: aws-sickkids-pts
 service: sickkids-pts
 frameworkVersion: '3'
@@ -15,7 +12,7 @@ package:
 provider:
   name: aws
   runtime: nodejs16.x
-  profile: sickkids-serverless-user
+  profile: # TODO: Add the name you put for your AWS provider user here when you configured a provider for Serverless
   region: ca-central-1
   stage: dev
   iam:
@@ -35,7 +32,7 @@ provider:
           # Resource:
           #   - Fn::GetAtt: [CognitoUserPoolMyAdminPool, Arn]
           #   - Fn::GetAtt: [RDSDatabase, Arn]
-          
+
   environment:
     COGNITO_USER_POOL_ID: !Ref CognitoUserPoolMyAdminPool
     DB_HOST: !GetAtt RDSDatabase.Endpoint.Address
@@ -111,14 +108,14 @@ resources:
               - Arn
     RDSDatabase:
       Type: AWS::RDS::DBInstance
-      Properties: 
+      Properties:
         Engine: "postgres"
         # BackupRetentionPeriod: 7  # The number of days to retain automated backups
         DBInstanceClass: "db.t4g.micro"
-        AllocatedStorage: 20 
-        DBName: ""
-        MasterUsername: ""  # Change this to your desired master username
-        MasterUserPassword: ""
+        AllocatedStorage: 20
+        DBName: "" # TODO: Add your database name here
+        MasterUsername: ""  # TODO: Add your master username here
+        MasterUserPassword: "" # TODO: Add your master password here
         # ManageMasterUserPassword: true --> this was something I came across at one point which is maybe a way to get KMS to manage it for you
         # MasterUserSecret:
         #   KmsKeyId: !Ref KMSKey
