@@ -33,8 +33,10 @@ import {
     type Subscription
 } from 'react-native-ble-plx'
 import { PermissionsAndroid, Platform } from 'react-native'
-import { API_KEY_CHARACTERISTIC_UUID, CONFIGURATION_SERVICE_UUID, DEFAULT_MTU_SIZE, DEFAULT_READ_INTERVAL, TRANSFER_SERVICE_UUID, UNIQUE_DEVICE_ID_CHARACTERISTIC_UUID } from '../utils/constants'
+import { API_KEY_CHARACTERISTIC_UUID, CONFIGURATION_SERVICE_UUID, CURRENT_TIME_CHARACTERISTIC_UUID, DEFAULT_MTU_SIZE, DEFAULT_READ_INTERVAL, TRANSFER_SERVICE_UUID, UNIQUE_DEVICE_ID_CHARACTERISTIC_UUID } from '../utils/constants'
 import { DBService } from './DBService'
+import base64 from 'react-native-base64'
+import { convertHexToBase64, convertNumberToHex } from '@src/utils/utils'
 
 const deviceNotConnectedErrorText = 'Device is not connected'
 
@@ -127,16 +129,26 @@ class BLEServiceInstance {
             this.manager
                 .connectToDevice(bleInterfaceId)
                 .then(device => {
+                    const bleInterfaceId = device.id
                     device.discoverAllServicesAndCharacteristics()
                         .then(() => {
                             this.connectedDevice = device
                         }).then(async () => {
                             // Negotiate MTU size
-                            await this.manager.requestMTUForDevice(device.id, DEFAULT_MTU_SIZE)
+                            await this.manager.requestMTUForDevice(bleInterfaceId, DEFAULT_MTU_SIZE)
                                 .then(device => {
                                     console.log("MTU negotiated: ", device.mtu)
                                 }).catch(error => {
                                     console.error("Failed to negotiate MTU", error)
+                                })
+                        }).then(async () => {
+                            // Write timestamp to device
+                            const currentTime = new Date().getTime() // UNIX timestamp in milliseconds
+                            await this.writeCharacteristicWithoutResponseForDevice(CONFIGURATION_SERVICE_UUID, CURRENT_TIME_CHARACTERISTIC_UUID, convertHexToBase64(convertNumberToHex(currentTime, 8)))
+                                .then(() => {
+                                    console.log("Current time written to device")
+                                }).catch(error => {
+                                    console.error("Failed to write current time to device", error)
                                 })
                         }).then(async () => {
                             // Read the device's unique ID
@@ -154,7 +166,7 @@ class BLEServiceInstance {
                                         .then(cloudSyncInfo => {
                                             const isCached = cloudSyncInfo ? true : false
                                             cloudSyncInfo = cloudSyncInfo ? cloudSyncInfo : {
-                                                ble_interface_id: device.id,
+                                                ble_interface_id: bleInterfaceId,
                                                 device_id: deviceId,
                                                 last_synced_id: 0,
                                                 api_key: null,

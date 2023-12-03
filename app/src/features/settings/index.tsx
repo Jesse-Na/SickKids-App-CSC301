@@ -1,9 +1,8 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import React, { useContext } from "react";
 import CustomButton from "../../components/CustomButton";
 import PageView from "../../components/PageView";
 import { Auth } from "aws-amplify";
-import { scheduleNotifications } from "../../utils/notifications";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SettingsStackParamList } from "../tabs/SettingsTab";
 import { AuthState } from "../authentication/AuthWrapper";
@@ -14,11 +13,6 @@ const Settings = (props: Props) => {
   return (
     <PageView>
       <View style={{ gap: 10 }}>
-        <CustomButton
-          title="Schedule Notifications"
-          onPress={scheduleNotifications}
-        />
-
         {isAuthenticated ? (
           <CustomButton title="Sign out" onPress={() => Auth.signOut()} />
         ) : (

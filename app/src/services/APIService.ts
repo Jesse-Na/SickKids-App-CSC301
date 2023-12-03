@@ -91,18 +91,16 @@ class APIServiceInstance {
                 queryStringParameters: {
                     apiKey: cloudSyncInfo.api_key,
                 },
-            })
-                .then(async ({ interval }) => {
-                    await DBService.updateCloudSyncInfoForDeviceId({
-                        ...cloudSyncInfo,
-                        last_synced_id: readingsBatch[readingsBatch.length - 1].id,
-                        reading_interval: interval
-                    });
-                    return interval;
-                })
-                .catch((e) => {
-                    console.error("failed to sync", e);
+            }).then(async ({ interval }) => {
+                await DBService.updateCloudSyncInfoForDeviceId({
+                    ...cloudSyncInfo,
+                    last_synced_id: readingsBatch[readingsBatch.length - 1].id,
+                    reading_interval: parseInt(interval)
                 });
+                return interval;
+            }).catch((e) => {
+                console.error("failed to sync", e);
+            });
         }
     }
 
