@@ -9,8 +9,8 @@ type Props = {
   patientUsage: { date: string; minutes: number | null }[];
 };
 
-
 // hard code my a text example for patientUsage
+const dev = true;
 const test_patientUsage = [
   { date: "2021-10-01", minutes: 10 },
   { date: "2021-10-02", minutes: 20 },
@@ -26,7 +26,6 @@ const test_patientUsage = [
 
 export default function PatientUsage({ patientId, patientUsage = test_patientUsage }: Props) {
   // for testing purposes solely
-  const dev = true;
   if (patientUsage.length === 0 && dev === true) {
     patientUsage = test_patientUsage;
   }

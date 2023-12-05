@@ -9,22 +9,10 @@ import AppTable from "../../components/AppTable";
 type Props = {};
 
 // hard code me some patients for testing purposees 
-// ,ust follow this structure
-// export type PatientPreview = {
-//   id: string;
-//   createdAt: string;
-//   removedAt: string | null;
-//   activeDevice: {
-//     id: string;
-//     interval: number;
-//     name: string;
-//     createdAt: string;
-//   } | null;
-// };
-
+const dev = true;
 const patients_test: PatientPreview[] = [
   {
-    "id": "patient-12345",
+    "id": "patient-test",
     "createdAt": "2023-01-01T10:00:00Z",
     "removedAt": null,
     "activeDevice": {
@@ -39,7 +27,7 @@ const patients_test: PatientPreview[] = [
 
 export default function AllPatientsTable({ }: Props) {
   const navigate = useNavigate();
-  const [patients, setPatients] = React.useState<PatientPreview[]>(patients_test);
+  const [patients, setPatients] = React.useState<PatientPreview[]>(dev ? patients_test : []);
   const filterSearch = (device: any, search: string) => {
     return (
       device.id.toLowerCase().includes(search.toLowerCase()) ||
