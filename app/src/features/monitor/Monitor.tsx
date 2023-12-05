@@ -22,7 +22,6 @@ type Props = NativeStackScreenProps<DeviceStackParamList, "Monitor">;
 
 let sendTransferAckInterval: string | number | NodeJS.Timer | undefined;
 let transferTimeoutInterval: string | number | NodeJS.Timer | undefined;
-let startTime = performance.now();
 
 const Monitor = ({ navigation }: Props) => {
   const { device, setDevice, deviceProperties, setDeviceProperties } =
@@ -66,6 +65,20 @@ const Monitor = ({ navigation }: Props) => {
     if (!device) {
       setApiKeyError(null);
       setDevice(null);
+
+      // Check if there is a device cached in the DB
+      DBService.getLatestCloudSyncInfo()
+        .then(async (info) => {
+          await BLEService.connectToDevice(info.ble_interface_id)
+            .then((device) => {
+              setDevice(device);
+            }).catch((e) => {
+              console.error(e);
+            });
+        }).catch((e) => {
+          console.error(e);
+        });
+
       return;
     }
 
@@ -157,9 +170,8 @@ const Monitor = ({ navigation }: Props) => {
         (characteristic) => {
           if (characteristic.value) {
             const bufferForCharacteristic = Buffer.from(characteristic.value, "base64");
-            console.log("buffer for characteristic: ", bufferForCharacteristic)
+            console.log("received fragment: ", bufferForCharacteristic);
             const fragmentIndex = combineBytes(bufferForCharacteristic, 0, FRAGMENT_INDEX_SIZE);
-            console.log("fragment index: ", fragmentIndex)
 
             // Check if the fragment is a termination fragment
             if (fragmentIndex === DATA_TRANSFER_FIN_CODE) {
@@ -176,6 +188,7 @@ const Monitor = ({ navigation }: Props) => {
                 })
 
                 if (totalFragmentsReceived === 0) {
+                  console.log("completed data transfer")
                   finishMonitoring();
                 } else {
                   resetMonitoring();
@@ -194,7 +207,6 @@ const Monitor = ({ navigation }: Props) => {
                   DATA_COMMUNICATION_CHARACTERISTIC_UUID,
                   convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER_CODE) + convertNumberToHex(lastReceivedFragmentIndex, 4))
                 ).then(() => {
-                  console.log(convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER_CODE) + convertNumberToHex(lastReceivedFragmentIndex, 4)))
                   console.log("chunk out of sequence error thrown");
                 });
               }
@@ -203,7 +215,6 @@ const Monitor = ({ navigation }: Props) => {
             }
 
             const fragmentData = bufferForCharacteristic.subarray(FRAGMENT_INDEX_SIZE, FRAGMENT_INDEX_SIZE + READING_SAMPLE_LENGTH);
-            console.log("fragment data: ", fragmentData)
             fragmentArray.push(fragmentData.join(""));
             bytesRemainingToCompleteSample -= fragmentData.length;
             totalFragmentsReceived++;
@@ -238,13 +249,11 @@ const Monitor = ({ navigation }: Props) => {
 
   }, [device, apiKey, deviceUniqueId, isMonitoring]);
 
-  const setReadingInterval = async (interval: number) => { };
-
   const refreshDevice = async () => {
     try {
       if (device) {
-        const resp = await APIService.getReadingInterval(device.id);
-        setReadingInterval(parseInt(resp));
+        console.log("refreshing device");
+        await APIService.getReadingInterval(device.id); // Reading interval will be written to device upon next connection
         setApiKeyError(null);
       }
     } catch (e: any) {
@@ -266,7 +275,6 @@ const Monitor = ({ navigation }: Props) => {
   }
 
   const finishMonitoring = () => {
-    console.log("finished monitoring in", performance.now() - startTime);
     APIService.syncToCloudForDevice(device?.id ?? null);
     setMonitoring(true);
     clearInterval(sendTransferAckInterval);

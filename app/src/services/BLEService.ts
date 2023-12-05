@@ -33,7 +33,7 @@ import {
     type Subscription
 } from 'react-native-ble-plx'
 import { PermissionsAndroid, Platform } from 'react-native'
-import { API_KEY_CHARACTERISTIC_UUID, CONFIGURATION_SERVICE_UUID, CURRENT_TIME_CHARACTERISTIC_UUID, DEFAULT_MTU_SIZE, DEFAULT_READ_INTERVAL, TRANSFER_SERVICE_UUID, UNIQUE_DEVICE_ID_CHARACTERISTIC_UUID } from '../utils/constants'
+import { API_KEY_CHARACTERISTIC_UUID, CONFIGURATION_SERVICE_UUID, CURRENT_TIME_CHARACTERISTIC_UUID, DEFAULT_MTU_SIZE, DEFAULT_READ_INTERVAL, READING_INTERVAL_CHARACTERISTIC_UUID, TRANSFER_SERVICE_UUID, UNIQUE_DEVICE_ID_CHARACTERISTIC_UUID } from '../utils/constants'
 import { DBService } from './DBService'
 import base64 from 'react-native-base64'
 import { convertHexToBase64, convertNumberToHex } from '@src/utils/utils'
@@ -143,7 +143,9 @@ class BLEServiceInstance {
                                 })
                         }).then(async () => {
                             // Write timestamp to device
-                            const currentTime = new Date().getTime() // UNIX timestamp in milliseconds
+                            const currentTime = Math.floor(new Date().getTime() / 1000) // UNIX timestamp in seconds
+                            console.log("Current time", currentTime)
+                            console.log(convertNumberToHex(currentTime, 8))
                             await this.writeCharacteristicWithoutResponseForDevice(CONFIGURATION_SERVICE_UUID, CURRENT_TIME_CHARACTERISTIC_UUID, convertHexToBase64(convertNumberToHex(currentTime, 8)))
                                 .then(() => {
                                     console.log("Current time written to device")
@@ -172,6 +174,16 @@ class BLEServiceInstance {
                                                 api_key: null,
                                                 reading_interval: DEFAULT_READ_INTERVAL
                                             }
+
+                                            return { cloudSyncInfo, isCached }
+                                        }).then(async ({ cloudSyncInfo, isCached }) => {
+                                            // Write the device's reading interval to the device
+                                            await this.writeCharacteristicWithoutResponseForDevice(CONFIGURATION_SERVICE_UUID, READING_INTERVAL_CHARACTERISTIC_UUID, convertHexToBase64(convertNumberToHex(cloudSyncInfo.reading_interval)))
+                                                .then(() => {
+                                                    console.log("Reading interval written to device")
+                                                }).catch(error => {
+                                                    console.error("Failed to write reading interval to device", error)
+                                                })
 
                                             return { cloudSyncInfo, isCached }
                                         }).then(async ({ cloudSyncInfo, isCached }) => {

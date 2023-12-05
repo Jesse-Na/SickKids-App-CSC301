@@ -109,6 +109,26 @@ class DBServiceInstance {
         });
     };
 
+    getLatestCloudSyncInfo = async (): Promise<CloudSyncInfo> => {
+        const db = this.getDatabase();
+        return new Promise<CloudSyncInfo>((resolve, reject) => {
+            db.transaction(
+                (tx) => {
+                    tx.executeSql(
+                        "SELECT * FROM cloud_sync_info ORDER BY id DESC LIMIT 1",
+                        [],
+                        (_, { rows }) => {
+                            resolve(rows._array[0]);
+                        }
+                    );
+                },
+                (e) => {
+                    reject(e);
+                }
+            );
+        });
+    }
+
     getCloudSyncInfoForDeviceId = async (deviceId: string): Promise<CloudSyncInfo> => {
         const db = this.getDatabase();
         return new Promise<CloudSyncInfo>((resolve, reject) => {
