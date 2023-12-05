@@ -43,6 +43,16 @@ https://mellifluous-biscochitos-ab7247.netlify.app/
 
 ## Testings
 
+to run the automated tests on terminal, do:
+- `npm install`
+- `npx cypress run`
+
+to run the automated tests with a GUI, do:
+- `npm install`
+- `npx cypress open`
+- `click the E2E test option`
+- `click the test that you want to run`
+
 
 ## Directory Structure
 - `/cypress`: Automated testing for the website
