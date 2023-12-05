@@ -9,7 +9,28 @@ type Props = {
   patientUsage: { date: string; minutes: number | null }[];
 };
 
-export default function PatientUsage({ patientId, patientUsage }: Props) {
+
+// hard code my a text example for patientUsage
+const test_patientUsage = [
+  { date: "2021-10-01", minutes: 10 },
+  { date: "2021-10-02", minutes: 20 },
+  { date: "2021-10-03", minutes: 30 },
+  { date: "2021-10-04", minutes: 40 },
+  { date: "2021-10-05", minutes: 50 },
+  { date: "2021-10-06", minutes: 60 },
+  { date: "2021-10-07", minutes: 70 },
+  { date: "2021-10-08", minutes: 80 },
+  { date: "2021-10-09", minutes: 90 },
+  { date: "2021-10-10", minutes: 100 },
+];
+
+export default function PatientUsage({ patientId, patientUsage = test_patientUsage }: Props) {
+  // for testing purposes solely
+  const dev = true;
+  if (patientUsage.length === 0 && dev === true) {
+    patientUsage = test_patientUsage;
+  }
+
   const formatted = useMemo(
     () =>
       patientUsage.map((p) => ({
