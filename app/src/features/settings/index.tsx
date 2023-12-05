@@ -5,7 +5,7 @@ import PageView from "../../components/PageView";
 import { Auth } from "aws-amplify";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { SettingsStackParamList } from "../tabs/SettingsTab";
-import { AuthState } from "../authentication/AuthWrapper";
+import { AuthState } from "../../context/AuthContextProvider";
 type Props = NativeStackScreenProps<SettingsStackParamList, "Settings">;
 
 const Settings = (props: Props) => {

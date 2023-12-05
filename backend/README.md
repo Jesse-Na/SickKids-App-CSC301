@@ -77,6 +77,6 @@ There are various key components and modules you need to know in order to unders
 The most important directories to know are the ones contained in *src*. There are three which we will go over individually.
 - *database* contains db.ts which initializes a Postgres database and all of the SQL table schemas for said database.
 - *lambdaFunctions* contains three files, each one corresponding to a major endpoint. For example, admin-endpoints.ts contains the code that handles any requests made to the admin/ endpoint and any of its sub-endpoints like admin/readings/
-- *utils* contains a mixture of files containing helper functions that files ini *database* and *lambdaFunctions* depend on.
+- *utils* contains a mixture of files containing helper functions that files in *database* and *lambdaFunctions* depend on.
 
 If you want to make a database change, you will need to make a change in *database* and if you want to make an API change, you will need to make a change in *lambdaFunctions*.

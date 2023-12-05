@@ -6,7 +6,7 @@ import PageView from "../../components/PageView";
 import { BLEService } from "@src/services/BLEService";
 import { Device } from "react-native-ble-plx";
 import { useBLEContext } from "@src/context/BLEContextProvider";
-import { AuthState } from "../authentication/AuthWrapper";
+import { AuthState } from "../../context/AuthContextProvider";
 import ErrorMessage from "@src/components/ErrorMessage";
 import CustomTextInput from "@src/components/CustomTextInput";
 import { APIService } from "@src/services/APIService";

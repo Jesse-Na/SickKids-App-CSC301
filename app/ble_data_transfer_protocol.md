@@ -29,11 +29,11 @@ stateDiagram-v2
         start_session : connect\n MTU negotiation\n <font color=blue>enable</font> notification of <font color=green>DATA</font>
         receive_ready : chunk counter = 0, ok status = false, restart ok status timer\n <font color=blue>write</font> ready to <font color=green>COM</font>
         monitor : <font color=blue>monitor</font> for <font color=green>DATA</font>
-        
+
         ok : restart ok status timer\n <font color=blue>write</font> OK to <font color=green>COM</font>
 
         error : <font color=blue>write</font> ERROR to <font color=green>COM</font>
-        
+
         done_session : <font color=blue>write</font> OK to <font color=green>COM</font>
 
         receive_nonfinal_ok : ok status = true, chunk counter++
@@ -42,7 +42,7 @@ stateDiagram-v2
         state receive_final <<choice>>
         state receive_nonfinal <<choice>>
         state total_chunks <<choice>>
-        
+
         %% START DIAGRAM %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         [*] --> reset_session
         reset_session --> start_session
@@ -53,31 +53,31 @@ stateDiagram-v2
         monitor --> [*] : data timeout
 
         %% received nonfinal chunk
-        monitor --> receive_nonfinal : received index < 0xFFFF        
+        monitor --> receive_nonfinal : received index < 0xFFFF
 
         receive_nonfinal --> receive_nonfinal_ok : next in sequence
         receive_nonfinal_ok --> ok_timer
-        
+
         ok_timer --> monitor
-        
+
         ok_timer --> ok : ok status timer up
         ok --> monitor
 
         receive_nonfinal --> error : out of sequence
-        
+
         %% receive final 0xFFFF chunk
-        monitor --> receive_final : received index 0xFFFF        
+        monitor --> receive_final : received index 0xFFFF
 
         receive_final --> done_session : total chunks == chunk counter
         done_session --> total_chunks
         total_chunks --> receive_ready : total chunks >= 0
         total_chunks --> [*] : total chunks == 0
-        
+
         receive_final --> error : total chunks != chunk counter
 
         %% received out of sequence chunk
         error --> monitor : ok status = false
-    } 
+    }
 ```
 *ok status timeout* = 1s, *data timeout* = 10s
 
@@ -106,3 +106,31 @@ stateDiagram-v2
 *total chunks*: unsigned 16-bit integer (little-endian) with a range of [0,0xFFFF], indicating total number of data chunks sent.
 
 *N*: the length of the chunk. Note that this must be <= MTU (maximum transmission unit) - 3 (bytes of ATT overhead) - 2 (bytes of *chunk index*). According to the BLE specifications, the MTU default size is 23 bytes, corresponding to *N*=18.
+
+# Data Sample Format
+Each data sample consists of 167 bytes in total.
+
+| Name       | Description                           | Units     | Datatype (BE) | Byte Offset | Example    |
+| ---------- | ------------------------------------- | --------- | ------------- | ----------- | ---------- |
+| timestamp  | Unix time                             | s         | S32           | 0           | 1699553827 |
+| soc        | Battery state of charge               | %         | U8            | 4           | 87         |
+| vcell      | ADC measurement of battery            | 20 mV     | U8            | 5           | 180        |
+| crate      | Rate of (dis)charge                   | %/hour    | S8            | 6           | \-4        |
+| chgstat    | Charger status                        |           | U8            | 7           | 0          |
+| touch[0]   | Touch sensor 1 delta                  |           | S16           | 8           | 6890       |
+| touch[1]   | Touch sensor 2 delta                  |           | S16           | 10          | \-890      |
+| eda        | Electrodermal activity                | ADC count | U16           | 12          | 4000       |
+| hr         | Heartrate                             | bpm       | U8            | 14          | 87         |
+| confidence | Heartrate confidence level            | %         | U8            | 15          | 50         |
+| scd        | Skin contact detection                |           | U8            | 16          | 3          |
+|            | Acceleration (25 samples, 1s @ 25 Hz) |           |               |             |            |
+| accelX[0]  |                                       | mg        | S16           | 17          | 283        |
+| accelY[0]  |                                       | mg        | S16           | 19          | \-15       |
+| accelZ[0]  |                                       | mg        | S16           | 21          | 971        |
+| accelX[1]  |                                       | mg        | S16           | 23          | 271        |
+| accelY[1]  |                                       | mg        | S16           | 25          | \-7        |
+| accelZ[1]  |                                       | mg        | S16           | 27          | 982        |
+|            | …                                     |           |               |             |            |
+| accelX[24] |                                       | mg        | S16           | 161         | \-102      |
+| accelY[24] |                                       | mg        | S16           | 163         | \-955      |
+| accelZ[24] |                                       | mg        | S16           | 165         | \-218      |

@@ -1,5 +1,11 @@
 export const DEVICE_TO_SERVER_BATCH_SIZE = 25;
 
+export const BACKEND_ADMIN_URL = "https://xbs8qyjek5.execute-api.ca-central-1.amazonaws.com/dev/admin";
+export const BACKEND_USER_URL = "https://xbs8qyjek5.execute-api.ca-central-1.amazonaws.com/dev/users";
+export const BACKEND_REGION = "ca-central-1";
+export const BACKEND_USER_POOL_ID = "ca-central-1_heZehJBfQ";
+export const BACKEND_USER_POOL_CLIENT_ID = "37ok0fbe88evr31re50r6m0rpg";
+
 export const MIN_RSSI = -80;
 export const DEFAULT_MTU_SIZE = 250;
 

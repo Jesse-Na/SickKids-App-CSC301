@@ -1,23 +1,20 @@
 import { API, Amplify, Auth } from 'aws-amplify';
 import { DeviceId } from "react-native-ble-plx";
 import { DBService } from "./DBService";
-import { DEFAULT_READ_INTERVAL, DEVICE_TO_SERVER_BATCH_SIZE } from '../utils/constants';
+import { BACKEND_ADMIN_URL, BACKEND_REGION, BACKEND_USER_POOL_CLIENT_ID, BACKEND_USER_POOL_ID, BACKEND_USER_URL, DEFAULT_READ_INTERVAL, DEVICE_TO_SERVER_BATCH_SIZE } from '../utils/constants';
 import { convertBase64ToHex } from '@src/utils/utils';
-
-const adminUrl = "https://xbs8qyjek5.execute-api.ca-central-1.amazonaws.com/dev/admin";
-const userUrl = "https://xbs8qyjek5.execute-api.ca-central-1.amazonaws.com/dev/users";
 
 export const AmplifyConfig = {
     Auth: {
-        region: "ca-central-1",
-        userPoolId: "ca-central-1_heZehJBfQ",
-        userPoolWebClientId: "37ok0fbe88evr31re50r6m0rpg",
+        region: BACKEND_REGION,
+        userPoolId: BACKEND_USER_POOL_ID,
+        userPoolWebClientId: BACKEND_USER_POOL_CLIENT_ID,
     },
     API: {
         endpoints: [
             {
                 name: "AdminBackend",
-                endpoint: adminUrl,
+                endpoint: BACKEND_ADMIN_URL,
                 custom_header: async () => {
                     const token = (await Auth.currentSession())
                         .getIdToken()
@@ -27,7 +24,7 @@ export const AmplifyConfig = {
             },
             {
                 name: "UserBackend",
-                endpoint: userUrl,
+                endpoint: BACKEND_USER_URL,
             },
         ],
     },

@@ -1,4 +1,3 @@
-import { View, Text } from "react-native";
 import { Hub, Auth } from "aws-amplify";
 import React, { createContext, useEffect, useState } from "react";
 

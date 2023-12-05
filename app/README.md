@@ -1,179 +1,82 @@
+# Steps to Build Mobile App
+
+This project is a mobile app built with React Native and Expo. As such, you must install [NodeJS](https://nodejs.org/en/download) for its package manager **npm** and **Expo**. Note if it says you do not have Expo in any of the steps below, you will need to install the Expo CLI by running `npm install -g eas-cli`. You may alternatively decide to use [yarn](https://classic.yarnpkg.com/lang/en/docs/install/#mac-stable) instead of npm, but it's recommended to install yarn through npm anyways.
+
 ## Versions
 
 - Gradle: 7.0.2
-- Java: 11.0.18
+- Java: 11.x
 
 ## Requirements
 
 - [Node.js](https://nodejs.org)
 
-## Steps to create app
+## Development Setup (Android)
 
-- If you are just running this, skip to step 8
-
-0. Install dependencies with npm or yarn
-1. Create the project `npx expo init -t expo-template-blank-typescript app`
-   1. Alternatively use `npx create-expo-app -t expo-template-blank-typescript app`
-3. Add react-native-ble-plx with `yarn add react-native-ble-plx`
-   1. I had to go in the node_modules/react-native-ble-plx/android/build.gradle and change the minSdkVersion to 23 to prevent build issues but there's probably a better way (NOT NEEDED)
-4. Edit app.json to add permissions `BLUETOOTH_ADMIN, BLUETOOTH_SCAN, BLUETOOTH_CONNECT` (NOT NEEDED)
-5. This is where I also then added most of the code all in src
-6. Make sure all packages are installed with npm or yarn
-7. Create android project `npx expo prebuild --platform android`. This will create the android folder
-   
-   1. Go to android/build.gradle and change the minSdkVersion to 23 like so: ```minSdkVersion = Integer.parseInt(findProperty('android.minSdkVersion') ?: '23')```
-8. Go to `android/app/src/main/AndroidManifest.xml`and add the lines under the `<manifest>` tag. The bluetooth scan should already exist but you need to add the permission flag
+1. Install package dependencies with npm as specified in the package.json file with:
 
 ```
-   <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"/>
-   <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/>
+npm install
 ```
 
-6. Create ios project `npx expo prebuild --platform ios`. This will create the ios folder
-7. Open the project in XCode and go to `Signing and Capabilities > Signing > Team` and select an apple account (I'm currently using my personal one)
-8. Select your device and press play on XCode to install it onto your phone, then start the server
+2. Plug your phone into your computer and create a dev build of the mobile app as specified in the app.json file by running:
 
-1. Go to android studio and open the android folder. Build and run the project on the selected device
-1. Run the dev server `npm run start`
-1. After any changes you can run `npm run android` to rebuild if needed
+```
+npx expo run:android
+```
 
+3. You may notice a security exception, but this should not have impacted whether the development build has been installed on your phone. After the installation, start the development server which is necessary to run the development build by executing:
 
-## Notifications - to be implemented
-* Background ios or foreground android: if disconnected once every 2 hours to get in range, cancelled on connect or if app is terminated
-* Terminated: background task --> if device hasn't connected in over 3 hours, remind every 30 min to reopen app
-* User gets logged out and there's data to sync
-* Low battery
+```
+npm run start
+```
 
-## Steps to get started
+4. Open the development build on your phone and either scan the QR Code or manually enter the URL that the development server indicates for you (e.g. http://192.168.0.15:8081).
 
-1. Install all modules listed as dependencies in `package.json` to local `node_modules` directory by running `npm install`
-1. Run local development client by running ~~`npm run start`~~ `npx expo run:android`
+*Note*: Any changes you make while the development server is running will automatically reload the app and apply the changes unless they are changes to the root component at index.js or other fundamental dependencies.
 
-## Additional steps to create a preview build (installing apps without submitting to the app stores)
+## Connecting Mobile App to Backend
 
-1. Create and login into an Expo account (see: https://docs.expo.dev/build/setup/)
-1. For Android, run `eas build --profile preview --platform android`
-1. For iOS, run
+Since we are using Expo version 48.0.0, support for environment variables is limited. As a result, our API connection information is stored directly in a Typescript file at src/utils/constants.ts. After deploying the backend, there are four constants in this file that you will need to change.
+
+- BACKEND_ADMIN_URL: Change this to the URL of the admin/ endpoint.
+- BACKEND_USER_URL: Change this to the URL of the user/ endpoint.
+- BACKEND_USER_POOL_ID: Navigate to the Cognito service in your AWS management console where you will see a list of user pools. Change this constant's value to what is specified under the "User pool ID" column for the user pool beginning with "sickkids-pts-admin"
+- BACKEND_USER_POOL_CLIENT_ID: Click on the user pool that we navigated to above, and then click on the *App Integration* tab. Scroll down until you see "App clients and analytics" where you should see an app client. Change this constant's value to what is specified under the "Client ID" column.
+
+## Preview Build Setup Instructions
+
+Preview builds are ways to test a production level build of an app without submitting it to app stores on iOS and Android.
+
+1. Complete the instructions to setup a development build and connect the mobile app to the backend.
+2. Create and login to an Expo account (see: https://docs.expo.dev/build/setup/)
+3. For Android, run `eas build --profile preview --platform android`
+   1. If the build is successful, after a while the CLI will return a QR code that will direct you to a link where you can install the APK on your Android phone. Alternatively, you can also input the url they provided into your phone's browser. The build should also be saved into your EAS account where you can access it anytime.
+4. For iOS, run
     1. `npx expo install yarn --npm`
     1. `eas device:create` to add a device for ad hoc provisioning
     1. `eas build --profile preview --platform ios`
 
-# Bluetooth Low Energy (BLE)
-This section details the BLE configuration of the STM32 (microcontroller) within the STM32CubeIDE IOC file.
-Open the IOC file
-Go to Middleware and Software Packs -> STM32_WPAN
+# Directory Structure
 
-Under the BLE GATT tab:
-Services (4):
+The entry point for the mobile app starts at index.js where it registers App.tsx as the root component. From there, all the React components found in the src/components and src/features folders are nested underneath this root. The files in the utils/ folder contain helper functions and constants that other files throughout the project depend on. Next, the context/ folder contains files responsible for providing a React Context of BLE-related and Authentication properties that various components need to display information, such as battery level, heart rate, device connectivity, admin sign-in status, etc.. Finally, the services/ folder contains files representing service interfaces that should be considered separate from the UI.
 
-Long Name: USAGE_DATA_SERVICE
-Short Name: UDS
+## Mobile App Architecture and Design
 
-Long Name: DEVICE_CONFIGURATION_SERVICE
-Short Name: DCS
+The key to understanding the mobile app architecture is to understand the relationship between the UI and services. Simply put, if the mobile app needs to interact with anything that is outside of itself like the backend (APIService), the BLE device (BLEService), and the local cache (DBService), it will interact with that thing through a service. Each of the three services act as an interface that provides the UI with functions it can call when it needs to interact with something external. It is also important to note that services can depend on one another as well, and specifically the BLE service relies on the API and DB service. Additionally, the APIService relies on the DBService.
 
-Long Name: CURRENT_TIME_SERVICE
-Short Name: CTS
+![image](./mobile_app_architecture.png)
 
-Long Name: SECURITY_SERVICE
-Short Name: SS
+Our design does not mean that the UI has a simple job (it is rather the opposite, the UI is the brain) as we have constructed each service to be as minimal and lightweight as possible. In other words, the functions in these service classes do the bare minimum and are designed for re-use, rather than catering to specific needs of the UI. Even the connectToDevice function in the BLEService class does the bare minimum for the purposes of our application. For example, it negotiates an MTU, writes the current time to the BLE device, and inserts/updates a cloudSyncInfo cache object. All of which are necessary for the optimal usage of the BLE device and are functionality that we would not expect the UI to invoke (e.g. the user will not have a button to negotiate MTU). In general, if you want to make a change to the API calls, interaction with the BLE device, or the local cache, you only need to look at the service files and the components where their functions are invoked.
 
-New tabs will then appear, configure them as follows:
-USAGE_DATA_SERVICE:
+There are two tables in the local cache as can be seen in the DBService file. One is for readings from the BLE device which is fairly self-explanatory. The other one cloud_sync_info is less intuitive, and is a table that contains all the properties needed for us to upload our readings to the backend. In an ideal situation where a study participant is only assigned a single device, this table should only have one row that will be updated each time the user uploads their readings to the cloud.
 
-UUID type: 16 bits
-UUID: EF41
+*Note*: For the local cache, we use an SQLite database installed locally on the smartphone. For authentication to AWS Cognito and API calls to the backend, we use the AWS Amplify library.
 
-Characteristic Long Name: DATA_CHARACTERISTIC
-Characteristic Short Name: DC
-Value Length: 247
-CHAR_PROP_NOTIFY: Yes
+## BLE Data Transfer Protocol
 
-DEVICE_CONFIGURATION_SERVICE:
+We use a custom data transfer protocol to guarantee that the BLE device successfully transfers over its samples. You can look at the ble_data_transfer_protocol for a detailed description of the protocol the BLE device uses. In short, it is reservation-based (central has to initiate the transfer) and rate-based (peripheral transfers data at a faster rate upon receiving acknowledgements from central) protocol that uses acknowledgements. Also, the peripheral sends out fragments/chunks per BLE notification and central is responsible for reassembling them into samples.
 
-UUID type: 128 bits
-UUID 128 input type: full
-UUID: DA 34 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+### Terminology
 
-Characteristic Long Name: READING_INTERVAL_CHARACTERISTIC
-Characteristic Short Name: RIC
-UUID type: 16 bits
-UUID: C071
-Value Length: 10
-CHAR_PROP_READ: Yes
-CHAR_PROP_WRITE_WITHOUT_RESP: Yes
-GATT_NOTIFY_WRITE_REQ_AND_WAIT_FOR_APPL_RESP: No
-GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP: No
-
-CURRENT_TIME_SERVICE:
-
-UUID type: 128 bits
-UUID 128 input type: full
-UUID: 18 05 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-
-Characteristic Long Name: CURRENT_TIME_CHARACTERISTIC
-Characteristic Short Name: CTC
-UUID type: 16 bits
-UUID: 2A2B
-Value Length: 10
-CHAR_PROP_READ: Yes
-CHAR_PROP_WRITE_WITHOUT_RESP: Yes
-GATT_NOTIFY_WRITE_REQ_AND_WAIT_FOR_APPL_RESP: No
-GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP: No
-
-SECURITY_SERVICE:
-
-Number of Characteristics: 2
-UUID type: 128 bits
-UUID 128 input type: full
-UUID: EF 34 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-
-Characteristic Long Name: DEVICE_ID
-Characteristic Short Name: DEV_ID
-UUID type: 128 bits
-UUID 128 input type: reduced
-UUID: 5BDF
-Value Length: 4
-CHAR_PROP_READ: Yes
-CHAR_PROP_WRITE_WITHOUT_RESP: Yes
-GATT_NOTIFY_WRITE_REQ_AND_WAIT_FOR_APPL_RESP: No
-GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP: No
-
-Characteristic Long Name: API_KEY
-Characteristic Short Name: API_KEY
-UUID type: 128 bits
-UUID 128 input type: reduced
-UUID: CCAD
-Value Length: 44
-CHAR_PROP_READ: Yes
-CHAR_PROP_WRITE_WITHOUT_RESP: Yes
-GATT_NOTIFY_WRITE_REQ_AND_WAIT_FOR_APPL_RESP: No
-GATT_NOTIFY_READ_REQ_AND_WAIT_FOR_APPL_RESP: No
-
-# Data Sample Format
-Each data sample consists of 167 bytes in total.
-
-| Name       | Description                           | Units     | Datatype (BE) | Byte Offset | Example    |
-| ---------- | ------------------------------------- | --------- | ------------- | ----------- | ---------- |
-| timestamp  | Unix time                             | s         | S32           | 0           | 1699553827 |
-| soc        | Battery state of charge               | %         | U8            | 4           | 87         |
-| vcell      | ADC measurement of battery            | 20 mV     | U8            | 5           | 180        |
-| crate      | Rate of (dis)charge                   | %/hour    | S8            | 6           | \-4        |
-| chgstat    | Charger status                        |           | U8            | 7           | 0          |
-| touch[0]   | Touch sensor 1 delta                  |           | S16           | 8           | 6890       |
-| touch[1]   | Touch sensor 2 delta                  |           | S16           | 10          | \-890      |
-| eda        | Electrodermal activity                | ADC count | U16           | 12          | 4000       |
-| hr         | Heartrate                             | bpm       | U8            | 14          | 87         |
-| confidence | Heartrate confidence level            | %         | U8            | 15          | 50         |
-| scd        | Skin contact detection                |           | U8            | 16          | 3          |
-|            | Acceleration (25 samples, 1s @ 25 Hz) |           |               |             |            |
-| accelX[0]  |                                       | mg        | S16           | 17          | 283        |
-| accelY[0]  |                                       | mg        | S16           | 19          | \-15       |
-| accelZ[0]  |                                       | mg        | S16           | 21          | 971        |
-| accelX[1]  |                                       | mg        | S16           | 23          | 271        |
-| accelY[1]  |                                       | mg        | S16           | 25          | \-7        |
-| accelZ[1]  |                                       | mg        | S16           | 27          | 982        |
-|            | …                                     |           |               |             |            |
-| accelX[24] |                                       | mg        | S16           | 161         | \-102      |
-| accelY[24] |                                       | mg        | S16           | 163         | \-955      |
-| accelZ[24] |                                       | mg        | S16           | 165         | \-218      |
+If you read the code, you might wonder what is bleInterfaceId and how is it different from deviceId. We use bleInterfaceId to refer to the ID that react-native-ble-plx uses (MAC address on Android and UUID on iOS) to connect with the BLE device. We use deviceId to refer to the unique ID that is written on the device.

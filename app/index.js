@@ -1,7 +1,7 @@
 import { registerRootComponent } from "expo";
 import { NavigationContainer } from "@react-navigation/native";
 import App from "./App";
-import AuthWrapper from "./src/features/authentication/AuthWrapper";
+import AuthWrapper from "./src/context/AuthContextProvider";
 import { useEffect } from "react";
 import * as Notifications from "expo-notifications";
 import { cancelAllNotifications } from "./src/utils/notifications";

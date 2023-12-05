@@ -7,7 +7,7 @@ import { Auth } from "aws-amplify";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import AuthPageView from "../../components/AuthPageView";
 import ErrorMessage from "../../components/ErrorMessage";
-import { AuthState } from "./AuthWrapper";
+import { AuthState } from "../../context/AuthContextProvider";
 
 const Login = () => {
   const [email, setEmail] = React.useState("");
