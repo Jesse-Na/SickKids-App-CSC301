@@ -122,6 +122,8 @@ app.post("/users/selfReporting", async function (req, res) {
 
   const { date, minutes } = req.body;
   const formattedDate = moment(date).format("YYYY-MM-DD");
+
+  // find the patient
   const patient = await db
     .getRepository(Patient)
     .createQueryBuilder("patient")
@@ -132,9 +134,14 @@ app.post("/users/selfReporting", async function (req, res) {
     })
     .getOne();
 
+  console.log("patient", patient)
+
   const existing = await db.getRepository(PatientReport).findOne({
     where: { date: formattedDate, patient: { id: patient.id } },
   });
+
+  console.log("existing", existing)
+
   if (existing) {
     return res.status(400).send("Reading exists");
   }
@@ -144,8 +151,15 @@ app.post("/users/selfReporting", async function (req, res) {
     minutesWorn: minutes,
     date: formattedDate,
   });
+
+  console.log("newEntry", newEntry)
+
   await db.getRepository(PatientReport).save(newEntry);
+
   const patientReports = await getCurrentPatientReports(device.id);
+
+  console.log("patientReports", patientReports)
+
   res.send(patientReports);
 });
 

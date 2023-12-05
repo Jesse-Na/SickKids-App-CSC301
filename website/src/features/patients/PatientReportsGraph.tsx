@@ -17,5 +17,5 @@ export default function PatientReportsGraph({ patientId }: Props) {
       setReportsData(data);
     });
   }, [patientId]);
-  return <PatientUsage patientUsage={reportsData} />;
+  return <PatientUsage patientId={patientId} patientUsage={reportsData} />;
 }
