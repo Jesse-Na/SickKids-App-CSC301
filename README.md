@@ -36,7 +36,7 @@ This project is primarily a mobile app that enables research studies into patien
 Definitions:
 * Reading interval refers to the period that the sensor device will collect samples. It is NOT the period of how often the mobile app collects data from the sensor.
 
-## Features Still to be Implemented
+## Features to be Implemented
 
 This list is a compiled version of whatever is not marked as DONE in the "Key Features and their Implementation Status" section with additional details.
 

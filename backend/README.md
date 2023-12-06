@@ -3,24 +3,22 @@
 This project uses Serverless with AWS as the provider to deploy the backend API made with AWS Lambda functions and a Postgres database hosted on RDS. As such, you must first create a [Serverless](https://www.serverless.com/) and [AWS](https://aws.amazon.com/console/) account, and [add AWS as a provider](https://www.serverless.com/framework/docs/guides/providers) to your Serverless account. Additionally, you must install the Serverless CLI and provide it with credentials to your Serverless account, [NodeJS](https://nodejs.org/en/download) for its package manager **npm**, and the typescript compiler [tsc](https://www.typescriptlang.org/download). There are numerous videos and tutorials online to help you with these steps, so ensure they are done in advance for a smoother execution of the instructions below.
 
 1. Install package dependencies as specified in the package.json file with:
-
-```
-npm install
-```
+  ```
+  npm install
+  ```
 
 2. Since we have written our AWS Lambda functions in Typescript, you will need to also compile the Typescript into Javascript using configuration settings specified in the tsconfig.json file by running:
+  ```
+  tsc
+  ```
 
-```
-tsc
-```
-
-3. Configure the serverless.yml file by providing the *org* of your serverless account, the profile.provider, DBName, MasterUsername, and MasterUserPassword. Beware of any naming limitations for AWS and Postgres. Also, do not confuse these attributes for other similarly named attributes. We've indicated the attributes you need to change with a TODO in the file.
+3. Configure the serverless.yml file by providing the *org* of your serverless account, the profile.provider, DBName, MasterUsername, and MasterUserPassword. Beware of any naming limitations for AWS and Postgres. Also, do not confuse these attributes for other similarly named attributes. We've indicated the attributes you need to change with a TODO in the file. Needless to say, please ensure your MasterUserPassword is strong.
 
 4. Now, you can deploy the API by running:
 
-```
-serverless deploy
-```
+  ```
+  serverless deploy
+  ```
 
 After running deploy, you should see output similar to:
 
@@ -52,23 +50,43 @@ Make sure your region is on ca-central-1
 
 After you have deployed your backend and web app, it is important to create an admin account so you can register devices in the mobile app and login to the web dashboard. This project leverages AWS Cognito to provide authentication services in this respect. To create an account in Cognito, navigate to the Cognito service and you should see a list of user pools. Click on the one that begins with "sickkids-pts-admin" and scroll down until you see "Users" Create a new user by providing the email address of the user and setting or generating a temporary password. Once complete, you can go to the web app and login with these credentials.
 
-## Accessing the Database Directly
-
-Make sure your region is on ca-central-1
-
-It is possible to directly connect to the database after you have deployed and run SQL queries directly. To do so, you will need to login to the AWS management console and navigate to the RDS service. From there, you should see a *Databases* tab on the left-hand side. Clicking on this tab will bring you to a list of all the databases currently in your account, click on the one that begins with "sickkids-pts-dev" and scroll down until you see "Security group rules" Click on the inbound security group rule and either add a new security group or modify the existing one by adding a new inbound rule. Regardless, you will have to add a new rule, which should allow traffic on all ports from your source IP.
-
-## Configuring Security Controls
+## Shifting to Production
 
 Make sure you region is on ca-central-1
 
 When you want to shift your API and database to production, you must ensure that it is secure.
-1. Remove direct database access if you configured it above.
+1. Ideally, remove direct database access if you configured it below.
 2. Navigate to the Lambda service and you should see a list of functions listed. Click on the admin-api function and go to the *Configuration* tab. Click on the *VPC* tab and add a VPC while selecting all available subnets. Choose the default VPC security group which will allow traffic from all sources.
+
+![](./images/Lambda%20Configuration%20VPC.png)
+
 3. Repeat step 2 with the user-api function. Do not perform step 2 for the other Lambda functions.
-4. Navigate to the VPC service and click on "Security Groups" Add a new security group for your database and set the inbound rule to only allow traffic from the default security group's ID. This step is crucial as it restricts access to the database to the backend API which is public.
+4. Navigate to the VPC service and click on "Security Groups" Add a new security group for your database and set the inbound rule to only allow traffic from the default security group's ID. We are preparing to restrict access to the database to only the backend API which is public.
+
+![](./images/VPC%20Security%20Groups.png)
+![](./images/VPC%20Add%20Security%20Group.png)
+![](./images/VPC%20Add%20Security%20Group%20Filled%20in.png)
+
+5. Navigate to the RDS service and click on the *Databases* tab on the left-hand side. You will see a list of all the databases currently in your account, click on the one that begins with "sickkids-pts-dev" and then click on the "Modify" button around the top-right. Scroll down until you see "Security group" and only select the security group you made in step 4.
+
+![](./images/RDS%20Navigate%20to%20Modify.png)
+![](./images/RDS%20Change%20Security%20Group.png)
+
+6. After clicking "Continue" you can choose to apply the change immediately or during the next maintenance window. We recommend just applying it immediately.
 
 There is a lot more you can do with security groups, so we recommend familiarizing yourself more with how they work through the official [docs](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html) and other resources on the internet.
+
+## Modifying the Database's Security Group Rules
+
+Make sure your region is on ca-central-1 and perform the steps in the "Shifting to Production" section.
+
+It is possible to directly connect to the database after you have deployed and run SQL queries directly. To do so, you will need to login to the AWS management console and navigate to the RDS service. From there, you should see a *Databases* tab on the left-hand side. Clicking on this tab will bring you to a list of all the databases currently in your account, click on the one that begins with "sickkids-pts-dev" and scroll down until you see "Security group rules" Click on the inbound security group rule and either add a new security group or modify the existing one by adding a new inbound rule. Regardless, you will have to add a new rule, which should allow traffic on all ports from your source IP.
+
+The images below show some of the steps to modify an existing security group inbound rule.
+
+![](./images//Database%20Security%20Group%20Rules%20section.png)
+![](./images/Navigate%20to%20Edit%20Inbound%20Rules.png)
+![](./images/Edit%20Inbound%20Rules.png)
 
 # Directory Structure
 
@@ -80,3 +98,11 @@ The most important directories to know are the ones contained in *src*. There ar
 - *utils* contains a mixture of files containing helper functions that files in *database* and *lambdaFunctions* depend on.
 
 If you want to make a database change, you will need to make a change in *database* and if you want to make an API change, you will need to make a change in *lambdaFunctions*.
+
+## Endpoint Functionality
+
+We will provide a high-level overview of what each of the three endpoints are responsible for
+
+- admin-cognito-endpoints: These endpoints are for managing admins, such as admin authentication, getting a list of all available admins, inviting a new admin, and deleting an existing one.
+- admin-endpoints: These endpoints contain functionality necessary to implement actions admins can take on the web and mobile app, such as get a list of devices, create/read/update/delete (CRUD) a specific device, get readings for a device, register a device, CRUD a patient, and get self-hours of wear.
+- user-endpoints: These endpoints contain functionality necessary to implement actions users can take on the mobile app, such as upload sensor readings, upload self-reported hours of wear, get the device reading interval, and get the questionnaire frequency.

@@ -6,9 +6,30 @@ https://mellifluous-biscochitos-ab7247.netlify.app/
 
 ## Deployment Instructions
 - Have `npm` installed
-- Configure `.env` with necessary credentials
+- Create a `.env` file at the root level of this website directory with necessary variables after you have deployed the backend. We will list out these variables now:
+   - REACT_APP_ADMIN_BACKEND: Change this to the URL of the admin/ endpoint.
+   - REACT_APP_COGNITO_BACKEND: Change this to the URL of the admin-cognito/ endpoint.
+   - REACT_APP_ADMIN_USER_BACKEND: Change this to the URL of the user/ endpoint.
+   - REACT_APP_REGION: Change this to "ca-central-1"
+   - REACT_APP_COGNITO_USER_POOL_ID: Navigate to the Cognito service in your AWS management console where you will see a list of user pools. Change this constant's value to what is specified under the "User pool ID" column for the user pool beginning with "sickkids-pts-admin"
+   - REACT_APP_COGNITO_USER_POOL_CLIENT_ID: Click on the user pool that we navigated to above, and then click on the *App Integration* tab. Scroll down until you see "App clients and analytics" where you should see an app client. Change this constant's value to what is specified under the "Client ID" column.
 
-1. Install packages with 
+   Here's an example .env:
+
+   ```bash
+   REACT_APP_REGION=ca-central-1
+   REACT_APP_COGNITO_USER_POOL_ID=ca-central-1_NZlWWBBKg
+   REACT_APP_COGNITO_USER_POOL_WEB_CLIENT_ID=27acm70ngeh0p5kkf5qruvbtbo
+   REACT_APP_ADMIN_COGNITO_BACKEND=https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/admin-cognito
+
+   # FOR DEVELOPMENT
+   REACT_APP_USER_BACKEND=https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/users
+   REACT_APP_ADMIN_BACKEND=https://plypo4itv8.execute-api.ca-central-1.amazonaws.com/dev/admin
+   ```
+
+Do not commit this `.env` file. You can now proceed with the rest of the steps.
+
+1. Install packages with
    ```
    npm install
    ```
@@ -26,11 +47,15 @@ https://mellifluous-biscochitos-ab7247.netlify.app/
    ```
 5. Create a new site with:
    ```
-   netlify sites:create 
+   netlify sites:create
    ```
 6. Deploy the site to production using:
    ```
    netlify deploy --prod
+   ```
+7. Set the environment variables in Netlify using your `.env` file:
+   ```
+   netlify env:import .env
    ```
 
 ## Features Implemented (as of December 2023)
@@ -41,7 +66,7 @@ https://mellifluous-biscochitos-ab7247.netlify.app/
 - SK-6: Change reading interval
   - Admin can change the reading interval of the device by clicking the edit device button in the device detail page
 
-## Testings
+## Testing
 
 to run the automated tests on terminal, do:
 - `npm install`
