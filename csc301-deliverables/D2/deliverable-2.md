@@ -36,6 +36,6 @@ Next, the reason we separated the mobile app into two teams, one managing the us
 Note that all three sub-teams may likely still have to make modifications to the backend, but we have judged these modifications to be very minor. For example, adding a new column in a table (e.g. for accelerometer data) or creating a single API endpoint to fetch data in a different format. Hence, it made sense for us to divide the project along business functionality rather than the typical frontend/backend/database/deployment because the frontend portion would have a lot more work as can be seen from our user stories. A similar reason can be made for why we have no dedicated sub-team for testing (each sub-team is responsible for writing tests where they can), and that is because the vast majority of the solution we wish to provide can only be validated through end-to-end integration tests with the actual physical sensor device present. Writing unit tests or even integration tests by supplying dummy values in place of the sensor device would yield little benefit (i.e. we should not try and mock or stub the sensor device; in some cases it may not even be possible such as when we want to test if the sensor data is being forwarded while the app is running in the background).
 
 Here are the teams assigned to each component:
-* Sub team 43.1 will work on the hidden aspects of the mobile app (https://github.com/csc301-2023-fall/deliverable-2-43-1-najesse-lintao7-wuandy4)
-* Sub team 43.2 will work on the user-facing aspects of the mobile app (https://github.com/csc301-2023-fall/deliverable-2-43-2-huffliam-yangjam3)
-* Sub team 43.3 will work on the web application (https://github.com/csc301-2023-fall/deliverable-2-43-3-wukevi20-luoyicon)
+* Sub team 43.1 will work on the hidden aspects of the mobile app
+* Sub team 43.2 will work on the user-facing aspects of the mobile app
+* Sub team 43.3 will work on the web application
