@@ -1,5 +1,6 @@
 import { DeviceReading } from "./types";
 export const getReadingsPerDay = (data: DeviceReading[]) => {
+  
   // get format [{"2021-03-01":1,"2021-03-02":2}]
   const timeWorn = data.reduce((acc: any, reading) => {
     const date = reading.timestamp?.split("T")[0] ?? 0;
@@ -10,6 +11,7 @@ export const getReadingsPerDay = (data: DeviceReading[]) => {
     }
     return acc;
   }, {});
+
   /*
   convert to this format
   [{date:2021-03-01, min:1}, {date:2021-03-02, min:2}]

@@ -5,7 +5,7 @@ import {
   DialogContent,
   DialogTitle,
   Typography,
-  Box
+  Box,
 } from "@mui/material";
 import React from "react";
 import { Device } from "../../utils/types";
@@ -26,7 +26,9 @@ export default function SyncAlertPopup({ open, handleClose, device }: Props) {
         </Typography>
       </DialogContent>
       <DialogActions>
-        <Box display="flex" justifyContent="center" width="100%"> {/* Use Box to create a flex container */}
+        <Box display="flex" justifyContent="center" width="100%">
+          {" "}
+          {/* Use Box to create a flex container */}
           <Button variant="contained" onClick={handleClose}>
             Acknowledge
           </Button>
@@ -35,5 +37,3 @@ export default function SyncAlertPopup({ open, handleClose, device }: Props) {
     </Dialog>
   );
 }
-
-  

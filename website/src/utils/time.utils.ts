@@ -1,7 +1,9 @@
 export const convertMsToString = (ms: number) => {
+
   const divisions = [1000, 60, 60, 24, 7, 4, 12, 52];
   const units = ["ms", "sec", "min", "hr", "day", "week", "month", "year"];
   const arr = [];
+
   let remainder = ms;
   for (let i = 0; i < divisions.length; i++) {
     const division = divisions[i];
@@ -12,5 +14,6 @@ export const convertMsToString = (ms: number) => {
       arr.push(`${value} ${unit}`);
     }
   }
+  
   return arr.reverse().join(", ");
 };

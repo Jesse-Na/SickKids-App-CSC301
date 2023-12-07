@@ -15,10 +15,11 @@ export const getDevice = (deviceId: string): Promise<Device> => {
 
 export const updateDevice = (
   deviceId: string,
-  device: { name: string; interval: number, frequency: number }
+  device: { name: string; interval: number; frequency: number }
 ): Promise<Device> => {
   return API.put("AWSBackend", `/device/${deviceId}`, { body: device });
 };
+
 export const disableDevice = (deviceId: string): Promise<Device> => {
   return API.del("AWSBackend", `/device/${deviceId}`, {});
 };
@@ -36,12 +37,15 @@ export const deleteReadings = (readingIds: number[]): Promise<void> => {
     },
   });
 };
+
 export const getAllAdmins = () => {
   return API.get("AWSCognitoBackend", "/admins", {});
 };
+
 export const deleteAdminAccount = (adminId: string) => {
   return API.del("AWSCognitoBackend", `/admins/${adminId}`, {});
 };
+
 export const createAdminAccount = (email: string) => {
   return API.post("AWSCognitoBackend", `/admins`, {
     body: {
@@ -57,6 +61,7 @@ export const getAllPatients = (): Promise<PatientPreview[]> => {
 export const getPatient = (patientId: string): Promise<Patient> => {
   return API.get("AWSBackend", `/patient/${patientId}`, {});
 };
+
 export const getPatientReadings = (
   patientId: string
 ): Promise<DeviceReading[]> => {

@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
-import AuthPage from './AuthPage';
-import { Button, TextField } from '@mui/material';
-import { AuthContext } from './AuthNavigator';
-import { Auth } from 'aws-amplify';
-import { Link, useNavigate } from 'react-router-dom';
-import ErrorMessage from '../../components/ErrorMessage';
+import React, { useEffect } from "react";
+import AuthPage from "./AuthPage";
+import { Button, TextField } from "@mui/material";
+import { AuthContext } from "./AuthNavigator";
+import { Auth } from "aws-amplify";
+import { Link, useNavigate } from "react-router-dom";
+import ErrorMessage from "../../components/ErrorMessage";
 
 type Props = {};
 
@@ -13,21 +13,21 @@ export default function ResetPassword({}: Props) {
   const { email, setEmail } = React.useContext(AuthContext);
   const [error, setError] = React.useState<string | null>(null);
   useEffect(() => {
-    setEmail('');
+    setEmail("");
   }, []);
 
   const handleSubmit = async () => {
     Auth.forgotPassword(email)
       .then(() => {
-        navigate('/new-password');
+        navigate("/new-password");
       })
       .catch((e) => {
         switch (e.code) {
-          case 'UserNotFoundException':
-            setError('User does not exist');
+          case "UserNotFoundException":
+            setError("User does not exist");
             break;
           default:
-            console.log('Unknown error', e.code);
+            console.log("Unknown error", e.code);
         }
       });
   };
@@ -51,7 +51,7 @@ export default function ResetPassword({}: Props) {
         Reset Password
       </Button>
       <ErrorMessage message={error} />
-      <div style={{ display: 'grid', placeItems: 'center' }}>
+      <div style={{ display: "grid", placeItems: "center" }}>
         <Link to="/">Back to Login</Link>
       </div>
     </AuthPage>

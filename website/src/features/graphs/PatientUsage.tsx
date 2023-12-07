@@ -24,7 +24,10 @@ const test_patientUsage = [
   { date: "2021-10-10", minutes: 100 },
 ];
 
-export default function PatientUsage({ patientId, patientUsage = test_patientUsage }: Props) {
+export default function PatientUsage({
+  patientId,
+  patientUsage = test_patientUsage,
+}: Props) {
   // for testing purposes solely
   if (patientUsage.length === 0 && dev === true) {
     patientUsage = test_patientUsage;
@@ -46,8 +49,8 @@ export default function PatientUsage({ patientId, patientUsage = test_patientUsa
       const minutes = p.minutes === null ? 0 : p.minutes;
       return {
         date: p.date,
-        minutes
-      }
+        minutes,
+      };
     });
 
     // convert to csv

@@ -41,8 +41,7 @@ export default function SelectedDevicePage({}: Props) {
     useState<boolean>(false);
   const [disableDevicePopupOpen, setDisableDevicePopupOpen] =
     useState<boolean>(false);
-  const [syncAlertPopupOpen, setSyncAlertPopupOpen] = 
-    useState<boolean>(false);
+  const [syncAlertPopupOpen, setSyncAlertPopupOpen] = useState<boolean>(false);
 
   const hasReadings = !!device?.lastSynced;
 
@@ -55,7 +54,7 @@ export default function SelectedDevicePage({}: Props) {
         setDevice(device);
         setLoading(false);
         const lastSynced = moment(device.lastSynced);
-        if (moment().diff(lastSynced, 'hours') > 24) {
+        if (moment().diff(lastSynced, "hours") > 24) {
           setSyncAlertPopupOpen(true);
         }
       })

@@ -18,12 +18,14 @@ export default function PatientPage({}: Props) {
   useEffect(() => {
     if (!patientId) return;
     console.log("patientId", patientId);
-    API.getPatient(patientId).then((patient) => {
-      console.log("patient", patient);
-      setPatient(patient);
-    }).catch((err) => {
-      console.log("err", err);
-    });
+    API.getPatient(patientId)
+      .then((patient) => {
+        console.log("patient", patient);
+        setPatient(patient);
+      })
+      .catch((err) => {
+        console.log("err", err);
+      });
   }, [patientId]);
 
   if (!patientId) return <div>Loading...</div>;

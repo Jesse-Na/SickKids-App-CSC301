@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 type Props = {
   title: string;
@@ -9,30 +9,30 @@ export default function AuthPage({ title, children }: Props) {
   return (
     <div
       style={{
-        width: '100vw',
-        height: '100vh',
-        display: 'grid',
-        placeItems: 'center',
+        width: "100vw",
+        height: "100vh",
+        display: "grid",
+        placeItems: "center",
       }}
     >
       <div
         style={{
-          padding: '20px',
-          paddingRight: '40px',
-          paddingLeft: '40px',
-          borderRadius: '10px',
+          padding: "20px",
+          paddingRight: "40px",
+          paddingLeft: "40px",
+          borderRadius: "10px",
         }}
       >
-        <h1 style={{ textAlign: 'center' }}>{title}</h1>
+        <h1 style={{ textAlign: "center" }}>{title}</h1>
         <div
           style={{
-            marginTop: '20px',
-            width: '300px',
+            marginTop: "20px",
+            width: "300px",
           }}
         >
           {children.map((child, index) => {
             return (
-              <div key={index} style={{ marginBottom: '20px' }}>
+              <div key={index} style={{ marginBottom: "20px" }}>
                 {child}
               </div>
             );

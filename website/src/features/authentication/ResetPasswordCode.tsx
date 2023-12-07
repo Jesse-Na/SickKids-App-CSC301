@@ -1,51 +1,51 @@
-import { Auth } from 'aws-amplify';
-import React, { useEffect } from 'react';
-import AuthPage from './AuthPage';
-import { Button, TextField } from '@mui/material';
-import { AuthContext } from './AuthNavigator';
-import { Link, useNavigate } from 'react-router-dom';
-import ErrorMessage from '../../components/ErrorMessage';
-import PasswordInput from '../../components/PasswordInput';
+import { Auth } from "aws-amplify";
+import React, { useEffect } from "react";
+import AuthPage from "./AuthPage";
+import { Button, TextField } from "@mui/material";
+import { AuthContext } from "./AuthNavigator";
+import { Link, useNavigate } from "react-router-dom";
+import ErrorMessage from "../../components/ErrorMessage";
+import PasswordInput from "../../components/PasswordInput";
 
 type Props = {};
 
 export default function ResetPasswordCode({}: Props) {
   const navigate = useNavigate();
-  const [code, setCode] = React.useState('');
-  const [newPassword, setNewPassword] = React.useState('');
+  const [code, setCode] = React.useState("");
+  const [newPassword, setNewPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const { email } = React.useContext(AuthContext);
   useEffect(() => {
-    if (!email) navigate('/reset-password');
+    if (!email) navigate("/reset-password");
   }, [email]);
 
   const handleSubmit = () => {
     Auth.forgotPasswordSubmit(email, code, newPassword)
       .then(() => {
-        navigate('/');
+        navigate("/");
       })
       .catch((e) => {
         console.log(e);
         switch (e.name) {
-          case 'CodeMismatchException':
-            console.log('Invalid code');
-            setError('Invalid code');
+          case "CodeMismatchException":
+            console.log("Invalid code");
+            setError("Invalid code");
             break;
-          case 'AuthError':
-            console.log('Invalid code');
+          case "AuthError":
+            console.log("Invalid code");
             setError(e.log);
             break;
-          case 'InvalidParameterException':
-            setError('Invalid Password');
+          case "InvalidParameterException":
+            setError("Invalid Password");
             break;
-          case 'InvalidPasswordException':
-            setError('Invalid Password');
+          case "InvalidPasswordException":
+            setError("Invalid Password");
             break;
-          case 'LimitExceededException':
-            setError('Too many attempts, please try again later');
+          case "LimitExceededException":
+            setError("Too many attempts, please try again later");
             break;
           default:
-            console.log('Unknown error', JSON.stringify(e));
+            console.log("Unknown error", JSON.stringify(e));
             break;
         }
       });
@@ -77,7 +77,7 @@ export default function ResetPasswordCode({}: Props) {
         Confirm
       </Button>
       <ErrorMessage message={error} />
-      <div style={{ display: 'grid', placeItems: 'center' }}>
+      <div style={{ display: "grid", placeItems: "center" }}>
         <Link to="/">Back to Login</Link>
       </div>
     </AuthPage>

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import Login from './Login';
-import { Auth, Hub } from 'aws-amplify';
-import jwt from 'jwt-decode';
-import AuthNavigator from './AuthNavigator';
+import React, { useEffect, useState } from "react";
+import Login from "./Login";
+import { Auth, Hub } from "aws-amplify";
+import jwt from "jwt-decode";
+import AuthNavigator from "./AuthNavigator";
 
 type Props = {
   children: JSX.Element;
@@ -13,10 +13,10 @@ export default function AuthWrapper(props: Props): JSX.Element {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    console.log('AUTH WRAPPER');
+    console.log("AUTH WRAPPER");
     Auth.currentAuthenticatedUser()
       .then((user) => {
-        console.log('AUTHENTICATED USER', user);
+        console.log("AUTHENTICATED USER", user);
         setAuthenticated(true);
         setLoading(false);
       })
@@ -24,17 +24,17 @@ export default function AuthWrapper(props: Props): JSX.Element {
         setAuthenticated(false);
         setLoading(false);
       });
-    Hub.listen('auth', (data) => {
-      console.log('AUTH HUB', data);
+    Hub.listen("auth", (data) => {
+      console.log("AUTH HUB", data);
       switch (data.payload.event) {
-        case 'signIn':
+        case "signIn":
           setAuthenticated(true);
           break;
-        case 'signOut':
+        case "signOut":
           setAuthenticated(false);
           break;
         default:
-          console.log('DEFAULT', data);
+          console.log("DEFAULT", data);
           break;
       }
     });

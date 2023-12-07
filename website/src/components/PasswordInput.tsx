@@ -1,6 +1,6 @@
-import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { IconButton, InputAdornment, TextField } from '@mui/material';
-import React from 'react';
+import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { IconButton, InputAdornment, TextField } from "@mui/material";
+import React from "react";
 
 type Props = {
   value: string;
@@ -11,23 +11,23 @@ type Props = {
 
 const requirements = [
   {
-    description: '8 characters minimum',
+    description: "8 characters minimum",
     regex: /.{8,}/,
   },
   {
-    description: 'At least one lowercase letter',
+    description: "At least one lowercase letter",
     regex: /[a-z]/,
   },
   {
-    description: 'At least one uppercase letter',
+    description: "At least one uppercase letter",
     regex: /[A-Z]/,
   },
   {
-    description: 'At least one number',
+    description: "At least one number",
     regex: /[0-9]/,
   },
   {
-    description: 'At least one special character',
+    description: "At least one special character",
     regex: /[^A-Za-z0-9]/,
   },
 ];
@@ -36,7 +36,7 @@ export default function PasswordInput({
   value,
   setValue,
   showRequirements = false,
-  label = 'Password',
+  label = "Password",
 }: Props) {
   const [showPassword, setShowPassword] = React.useState(false);
   return (
@@ -48,7 +48,7 @@ export default function PasswordInput({
         autoCapitalize="none"
         variant="standard"
         fullWidth
-        type={showPassword ? 'text' : 'password'}
+        type={showPassword ? "text" : "password"}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
@@ -69,8 +69,8 @@ export default function PasswordInput({
         requirements.map((requirement, index) => (
           <div
             style={{
-              color: requirement.regex.test(value) ? 'green' : 'red',
-              fontSize: '0.8rem',
+              color: requirement.regex.test(value) ? "green" : "red",
+              fontSize: "0.8rem",
             }}
             key={index}
           >

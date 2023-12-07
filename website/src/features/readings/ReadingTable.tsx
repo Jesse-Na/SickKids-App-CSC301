@@ -13,14 +13,18 @@ type Props = {
 
 const columns: GridColDef[] = [
   { field: "id", headerName: "ID", width: 90, editable: false },
+
   { field: "timestamp", headerName: "Timestamp", width: 200, editable: false },
+
   { field: "battery", headerName: "Battery", width: 100 },
+
   {
     field: "touchSensor1",
     headerName: "Touch 1",
     width: 100,
     editable: false,
   },
+
   {
     field: "touchSensor2",
     headerName: "Touch 2",
@@ -34,29 +38,38 @@ const columns: GridColDef[] = [
     width: 150,
     editable: false,
   },
+
   {
     field: "externalElectrodermalActivity",
     headerName: "External Electrodermal Activity",
     width: 150,
     editable: false,
   },
+
   { field: "heartRate", headerName: "Heart Rate", width: 150, editable: false },
+
   { field: "SpO2", headerName: "SpO2", width: 150, editable: false },
+
   {
     field: "IMUFrequency",
     headerName: "IMU Frequency",
     width: 150,
     editable: false,
   },
+
   {
     field: "numIMUSamples",
     headerName: "Number of IMU Samples",
     width: 150,
     editable: false,
   },
+
   { field: "accelX", headerName: "Accel X", width: 150, editable: false },
+
   { field: "accelY", headerName: "Accel Y", width: 150, editable: false },
+
   { field: "accelZ", headerName: "Accel Z", width: 150, editable: false },
+
   {
     field: "deviceSynced",
     headerName: "Synced to Phone",

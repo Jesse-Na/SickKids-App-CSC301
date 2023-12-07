@@ -1,5 +1,5 @@
-import React from 'react';
-import { Admin } from '../../utils/types';
+import React from "react";
+import { Admin } from "../../utils/types";
 import {
   Button,
   Dialog,
@@ -8,8 +8,8 @@ import {
   DialogTitle,
   TextField,
   Typography,
-} from '@mui/material';
-import { createAdminAccount } from '../../api';
+} from "@mui/material";
+import { createAdminAccount } from "../../api";
 
 type Props = {
   open: boolean;
@@ -18,8 +18,8 @@ type Props = {
 };
 
 export default function CreateAdminDialog({ open, setOpen, onCreated }: Props) {
-  const [email, setEmail] = React.useState<string>('');
-  const [error, setError] = React.useState<string>('');
+  const [email, setEmail] = React.useState<string>("");
+  const [error, setError] = React.useState<string>("");
   const [loading, setLoading] = React.useState<boolean>(false);
 
   const handleCreate = () => {
@@ -55,7 +55,9 @@ export default function CreateAdminDialog({ open, setOpen, onCreated }: Props) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
+
       </DialogContent>
+      
       <DialogActions>
         <Button onClick={handleCreate} variant="contained" disabled={loading}>
           Invite

@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
-import { deleteAdminAccount, getAllAdmins } from '../../api';
-import AdminTable from '../admins/AdminTable';
-import CreateAdminDialog from '../admins/CreateAdminDialog';
-import { Admin } from '../../utils/types';
+import React, { useEffect } from "react";
+import { deleteAdminAccount, getAllAdmins } from "../../api";
+import AdminTable from "../admins/AdminTable";
+import CreateAdminDialog from "../admins/CreateAdminDialog";
+import { Admin } from "../../utils/types";
 
 type Props = {};
 

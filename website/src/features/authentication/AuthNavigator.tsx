@@ -1,9 +1,9 @@
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Login from './Login';
-import ResetPassword from './ResetPassword';
-import CompleteNewPassword from './CompleteNewPassword';
-import ResetPasswordCode from './ResetPasswordCode';
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import Login from "./Login";
+import ResetPassword from "./ResetPassword";
+import CompleteNewPassword from "./CompleteNewPassword";
+import ResetPasswordCode from "./ResetPasswordCode";
 
 type Props = {};
 //create a context
@@ -11,13 +11,13 @@ type Props = {};
 export const AuthContext = React.createContext({
   user: null,
   setUser: (user: any) => {},
-  email: '',
+  email: "",
   setEmail: (email: any) => {},
 });
 
 export default function AuthNavigator({}: Props) {
   const [user, setUser] = React.useState(null);
-  const [email, setEmail] = React.useState('');
+  const [email, setEmail] = React.useState("");
   const value = { user, setUser, email, setEmail };
 
   return (
