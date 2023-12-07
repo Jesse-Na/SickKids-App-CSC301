@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import moment from "moment";
 import { Chip } from "@mui/material";
 import { convertMsToString } from "../../utils/time.utils";
-import { Device } from "../../utils/types";
+import type { Device } from "../../utils/types";
 import AppTable from "../../components/AppTable";
 
 type Props = {};

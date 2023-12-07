@@ -8,6 +8,7 @@ import PasswordInput from "../../components/PasswordInput";
 type Props = {};
 
 const Login = (props: Props) => {
+  
   const navigate = useNavigate();
   const { email, setEmail, setUser } = React.useContext(AuthContext);
 
@@ -59,6 +60,7 @@ const Login = (props: Props) => {
       }
     }
   };
+
   return (
     <AuthPage title="Login">
       <TextField

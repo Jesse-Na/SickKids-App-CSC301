@@ -9,9 +9,11 @@ import PasswordInput from "../../components/PasswordInput";
 type Props = {};
 
 export default function CompleteNewPassword({}: Props) {
+
   const navigate = useNavigate();
   const { user, email } = React.useContext(AuthContext);
   const [newPassword, setNewPassword] = React.useState("");
+  
   const handleSubmit = async () => {
     Auth.completeNewPassword(user, newPassword, {})
       .then((user) => {
@@ -21,9 +23,11 @@ export default function CompleteNewPassword({}: Props) {
         console.log(e);
       });
   };
+
   useEffect(() => {
     if (!email) navigate("/");
   }, [email]);
+
   return (
     <AuthPage title="Set New Password">
       <div>{email}</div>
