@@ -4,9 +4,7 @@ import AdminTable from "../admins/AdminTable";
 import CreateAdminDialog from "../admins/CreateAdminDialog";
 import { Admin } from "../../utils/types";
 
-type Props = {};
-
-export default function Admins({}: Props) {
+export default function Admins() {
   const [open, setOpen] = React.useState(false);
   const [admins, setAdmins] = React.useState<any[]>([]);
   useEffect(() => {

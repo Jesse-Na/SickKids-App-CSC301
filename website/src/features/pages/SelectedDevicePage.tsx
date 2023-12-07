@@ -10,19 +10,7 @@ import EditDevicePopup from "../selectedDevice/EditDevicePopup";
 import DisableDevicePopup from "../selectedDevice/DisableDevicePopup";
 import SyncAlertPopup from "../selectedDevice/SyncAlertPopup";
 
-type Props = {};
-
-// const dummyDevice: Device = {
-//   id: "test",
-//   name: "Test Device",
-//   lastSynced: "2021-10-15T19:00:00.000Z",
-//   lastReset: "2021-10-15T19:00:00.000Z",
-//   interval: 1000 * 60 * 60 * 24,
-//   user: "test user",
-//   frequency: 1,
-// };
-
-export default function SelectedDevicePage({}: Props) {
+export default function SelectedDevicePage() {
   const { id } = useParams();
   const navigate = useNavigate();
 

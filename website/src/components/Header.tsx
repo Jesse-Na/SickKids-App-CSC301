@@ -5,8 +5,6 @@ import { IconButton, MenuItem, Popover } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AccountCircle } from "@mui/icons-material";
 
-type Props = {};
-
 const navLinks = [
   {
     name: "Devices",
@@ -22,7 +20,7 @@ const navLinks = [
   },
 ];
 
-export default function Header({}: Props) {
+export default function Header() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [email, setEmail] = React.useState("");

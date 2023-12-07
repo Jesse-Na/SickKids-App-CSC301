@@ -6,9 +6,7 @@ import { AuthContext } from "./AuthNavigator";
 import { Link, useNavigate } from "react-router-dom";
 import PasswordInput from "../../components/PasswordInput";
 
-type Props = {};
-
-export default function CompleteNewPassword({}: Props) {
+export default function CompleteNewPassword() {
 
   const navigate = useNavigate();
   const { user, email } = React.useContext(AuthContext);

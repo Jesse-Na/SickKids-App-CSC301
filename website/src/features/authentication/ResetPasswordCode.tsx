@@ -7,9 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import ErrorMessage from "../../components/ErrorMessage";
 import PasswordInput from "../../components/PasswordInput";
 
-type Props = {};
-
-export default function ResetPasswordCode({}: Props) {
+export default function ResetPasswordCode() {
 
   const navigate = useNavigate();
   const [code, setCode] = React.useState("");

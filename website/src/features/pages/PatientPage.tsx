@@ -8,9 +8,7 @@ import PatientBatteryGraph from "../patients/PatientBatteryGraph";
 import { Box } from "@mui/material";
 import PatientReportsGraph from "../patients/PatientReportsGraph";
 
-type Props = {};
-
-export default function PatientPage({}: Props) {
+export default function PatientPage() {
   const patientId = useParams<{ id: string }>().id;
 
   const [patient, setPatient] = React.useState<Patient | null>(null);

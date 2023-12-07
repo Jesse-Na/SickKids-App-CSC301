@@ -6,8 +6,6 @@ import { convertMsToString } from "../../utils/time.utils";
 import { PatientPreview } from "../../utils/types";
 import AppTable from "../../components/AppTable";
 
-type Props = {};
-
 // hard code me some patients for testing purposees
 const dev = true;
 const patients_test: PatientPreview[] = [
@@ -24,7 +22,7 @@ const patients_test: PatientPreview[] = [
   },
 ];
 
-export default function AllPatientsTable({}: Props) {
+export default function AllPatientsTable() {
   const navigate = useNavigate();
   const [patients, setPatients] = React.useState<PatientPreview[]>(
     dev ? patients_test : []

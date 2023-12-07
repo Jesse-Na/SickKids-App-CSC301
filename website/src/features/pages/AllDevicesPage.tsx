@@ -1,8 +1,6 @@
 import DevicesTable from "../allDevices/DevicesTable";
 
-type Props = {};
-
-export default function AllDevicesPage({}: Props) {
+export default function AllDevicesPage() {
   return (
     <div>
       <DevicesTable />

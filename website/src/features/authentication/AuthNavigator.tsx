@@ -4,8 +4,6 @@ import Login from "./Login";
 import ResetPassword from "./ResetPassword";
 import CompleteNewPassword from "./CompleteNewPassword";
 import ResetPasswordCode from "./ResetPasswordCode";
-
-type Props = {};
 //create a context
 
 export const AuthContext = React.createContext({
@@ -15,7 +13,7 @@ export const AuthContext = React.createContext({
   setEmail: (email: any) => {},
 });
 
-export default function AuthNavigator({}: Props) {
+export default function AuthNavigator() {
   const [user, setUser] = React.useState(null);
   const [email, setEmail] = React.useState("");
   const value = { user, setUser, email, setEmail };

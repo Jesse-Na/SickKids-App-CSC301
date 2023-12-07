@@ -3,9 +3,7 @@ import * as API from "../../api";
 import { PatientPreview } from "../../utils/types";
 import AllPatientsTable from "../patients/AllPatientsTable";
 
-type Props = {};
-
-export default function AllPatients({}: Props) {
+export default function AllPatients() {
   const [patients, setPatients] = React.useState<PatientPreview[]>([]);
   useEffect(() => {
     API.getAllPatients().then((patients) => {

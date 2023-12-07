@@ -6,9 +6,7 @@ import { Auth } from "aws-amplify";
 import { Link, useNavigate } from "react-router-dom";
 import ErrorMessage from "../../components/ErrorMessage";
 
-type Props = {};
-
-export default function ResetPassword({}: Props) {
+export default function ResetPassword() {
 
   const navigate = useNavigate();
   const { email, setEmail } = React.useContext(AuthContext);

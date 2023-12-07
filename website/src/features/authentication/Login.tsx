@@ -5,9 +5,9 @@ import AuthPage from "./AuthPage";
 import { AuthContext } from "./AuthNavigator";
 import { Link, useNavigate } from "react-router-dom";
 import PasswordInput from "../../components/PasswordInput";
-type Props = {};
 
-const Login = (props: Props) => {
+
+const Login = () => {
   
   const navigate = useNavigate();
   const { email, setEmail, setUser } = React.useContext(AuthContext);

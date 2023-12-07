@@ -7,9 +7,7 @@ import { convertMsToString } from "../../utils/time.utils";
 import type { Device } from "../../utils/types";
 import AppTable from "../../components/AppTable";
 
-type Props = {};
-
-export default function DevicesTable({}: Props) {
+export default function DevicesTable() {
   const navigate = useNavigate();
   const [devices, setDevices] = React.useState<Device[]>([]);
   const filterSearch = (device: any, search: string) => {
