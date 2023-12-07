@@ -33,10 +33,11 @@ import {
     type Subscription
 } from 'react-native-ble-plx'
 import { PermissionsAndroid, Platform } from 'react-native'
-import { API_KEY_CHARACTERISTIC_UUID, CONFIGURATION_SERVICE_UUID, CURRENT_TIME_CHARACTERISTIC_UUID, DEFAULT_MTU_SIZE, DEFAULT_READ_INTERVAL, READING_INTERVAL_CHARACTERISTIC_UUID, TRANSFER_SERVICE_UUID, UNIQUE_DEVICE_ID_CHARACTERISTIC_UUID } from '../utils/constants'
+import { API_KEY_CHARACTERISTIC_UUID, CONFIGURATION_SERVICE_UUID, CURRENT_TIME_CHARACTERISTIC_UUID, DATA_COMMUNICATION_CHARACTERISTIC_UUID, DATA_TRANSFER_ACK_INTERVAL, DATA_TRANSFER_FIN_CODE, DATA_TRANSFER_OK_CODE, DATA_TRANSFER_OUT_OF_ORDER_CODE, DATA_TRANSFER_START_CODE, DATA_TRANSFER_TIMEOUT, DEFAULT_MTU_SIZE, DEFAULT_READ_INTERVAL, DEVICE_TO_SERVER_BATCH_SIZE, FRAGMENT_INDEX_SIZE, RAW_DATA_CHARACTERISTIC_UUID, READING_INTERVAL_CHARACTERISTIC_UUID, READING_SAMPLE_LENGTH, TRANSFER_SERVICE_UUID, UNIQUE_DEVICE_ID_CHARACTERISTIC_UUID } from '../utils/constants'
 import { DBService } from './DBService'
 import base64 from 'react-native-base64'
-import { convertHexToBase64, convertNumberToHex } from '@src/utils/utils'
+import { combineBytes, convertHexToBase64, convertNumberToHex } from '@src/utils/utils'
+import { APIService } from './APIService'
 
 const deviceNotConnectedErrorText = 'Device is not connected'
 
@@ -317,6 +318,192 @@ class BLEServiceInstance {
     finishMonitor = () => {
         this.isCharacteristicMonitorDisconnectExpected = true
         this.characteristicMonitor?.remove()
+    }
+
+    // Start a data transfer with the connected device and return true if there is more data to transfer
+    startDataTransfer = (deviceUniqueId: string) => {
+        if (!this.connectedDevice) {
+            console.error(deviceNotConnectedErrorText)
+            throw new Error(deviceNotConnectedErrorText)
+        }
+        if (!this.connectedDevice.id) {
+            console.error("Device ID is null")
+            throw new Error("Device ID is null")
+        }
+
+        const bleInterfaceId = this.connectedDevice?.id;
+
+        let sendTransferAckInterval: string | number | NodeJS.Timer | undefined;
+        let transferTimeoutInterval: string | number | NodeJS.Timer | undefined;
+        let rawDataMonitor: Subscription | null = null;
+        let isRawDataMonitorDisconnectExpected = false;
+        let isMoreDataToTransfer = false;
+
+        // Call to finish the current data transfer
+        const finishDataTransfer = () => {
+            console.log("finishing data transfer, cleaning up")
+            APIService.syncToCloudForDevice(bleInterfaceId)
+                .then(() => {
+                    console.log("readings synced to cloud");
+                }).catch((e) => {
+                    console.error(e);
+                });
+            clearInterval(sendTransferAckInterval);
+            clearInterval(transferTimeoutInterval);
+            isRawDataMonitorDisconnectExpected = true;
+            rawDataMonitor?.remove();
+        }
+
+        // Call to finish and start a new data transfer
+        const resetDataTransfer = () => {
+            finishDataTransfer();
+            console.log("note there is more data to transfer");
+            isMoreDataToTransfer = true;
+        }
+
+        let prevExpectedFragmentIndex = 0;
+        let lastReceivedFragmentIndex = DATA_TRANSFER_FIN_CODE;
+        let nextExpectedFragmentIndex = 0;
+        let totalFragmentsReceived = 0;
+        let fragmentArray: string[] = []; // Array of fragments/chunks that will be combined into a sample
+        let bytesRemainingToCompleteSample = READING_SAMPLE_LENGTH;
+
+        // Start a timer to check if we have received any fragments in the last DATA_TRANSFER_TIMEOUT seconds
+        transferTimeoutInterval = setInterval(() => {
+            if (prevExpectedFragmentIndex === lastReceivedFragmentIndex) {
+                console.log("no fragments received in the last ", DATA_TRANSFER_TIMEOUT, " seconds, stopping monitor");
+                finishDataTransfer();
+            } else {
+                prevExpectedFragmentIndex = lastReceivedFragmentIndex;
+            }
+        }, DATA_TRANSFER_TIMEOUT);
+
+        // Handle when we receive a fragment from the device
+        const onFragmentReceived = (base64EncodedFragmentString: string) => {
+            const bufferForCharacteristic = Buffer.from(base64EncodedFragmentString, "base64");
+            console.log("received fragment: ", bufferForCharacteristic);
+            const fragmentIndex = combineBytes(bufferForCharacteristic, 0, FRAGMENT_INDEX_SIZE);
+
+            // Check if the fragment is a termination fragment
+            if (fragmentIndex === DATA_TRANSFER_FIN_CODE) {
+                // Check if we have received all the fragments
+                const numFragmentsSentFromDevice = combineBytes(bufferForCharacteristic, FRAGMENT_INDEX_SIZE, FRAGMENT_INDEX_SIZE + 2);
+                if (totalFragmentsReceived === numFragmentsSentFromDevice) {
+                    // Acknowledge the termination fragment
+                    this.writeCharacteristicWithoutResponseForDevice(
+                        TRANSFER_SERVICE_UUID,
+                        DATA_COMMUNICATION_CHARACTERISTIC_UUID,
+                        convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OK_CODE) + convertNumberToHex(DATA_TRANSFER_FIN_CODE, 4))
+                    ).then(() => {
+                        console.log("acknowledged termination fragment");
+                    })
+
+                    if (totalFragmentsReceived === 0) {
+                        finishDataTransfer();
+                    } else {
+                        resetDataTransfer();
+                    }
+
+                    return;
+                }
+            }
+
+            // Drop out of order fragments
+            if (fragmentIndex !== nextExpectedFragmentIndex) {
+                // Only send out of order error if the fragment we received is larger than the last one we received
+                if (fragmentIndex > nextExpectedFragmentIndex) {
+                    this.writeCharacteristicWithoutResponseForDevice(
+                        TRANSFER_SERVICE_UUID,
+                        DATA_COMMUNICATION_CHARACTERISTIC_UUID,
+                        convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OUT_OF_ORDER_CODE) + convertNumberToHex(lastReceivedFragmentIndex, 4))
+                    ).then(() => {
+                        console.log("chunk out of sequence error thrown");
+                    });
+                }
+
+                return;
+            }
+
+            if (sendTransferAckInterval === undefined) {
+                // Periodically send an acknowledgement to the device that we successfully received the message
+                sendTransferAckInterval = setInterval(() => {
+                    this.writeCharacteristicWithoutResponseForDevice(
+                        TRANSFER_SERVICE_UUID,
+                        DATA_COMMUNICATION_CHARACTERISTIC_UUID,
+                        convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OK_CODE) + convertNumberToHex(lastReceivedFragmentIndex, 4))
+                    ).then(() => {
+                        console.log("acknowledged fragments up to and including: ", lastReceivedFragmentIndex);
+                    }).catch((e) => {
+                        console.error(e);
+                        finishDataTransfer();
+                    });
+                }, DATA_TRANSFER_ACK_INTERVAL);
+            }
+
+            const fragmentData = bufferForCharacteristic.subarray(FRAGMENT_INDEX_SIZE, FRAGMENT_INDEX_SIZE + READING_SAMPLE_LENGTH);
+            fragmentArray.push(fragmentData.join(""));
+            bytesRemainingToCompleteSample -= fragmentData.length;
+            totalFragmentsReceived++;
+            nextExpectedFragmentIndex++;
+            lastReceivedFragmentIndex = fragmentIndex;
+
+            if (nextExpectedFragmentIndex >= DATA_TRANSFER_FIN_CODE) {
+                nextExpectedFragmentIndex = 0;
+            }
+
+            if (bytesRemainingToCompleteSample <= 0) {
+                // Compile fragments into sample and save to DB
+                const sample = fragmentArray.join("").substring(0, READING_SAMPLE_LENGTH);
+                DBService.saveReading(sample, deviceUniqueId);
+
+                // Sync readings to cloud every DEVICE_TO_SERVER_BATCH_SIZE readings
+                if (totalFragmentsReceived % DEVICE_TO_SERVER_BATCH_SIZE === 0) {
+                    // APIService.syncToCloudForDevice(device.id);
+                }
+
+                // Reset state
+                fragmentArray = [];
+                bytesRemainingToCompleteSample = READING_SAMPLE_LENGTH;
+            }
+        }
+
+        const setupRawDataMonitor = () => {
+            rawDataMonitor = this.manager.monitorCharacteristicForDevice(
+                bleInterfaceId,
+                TRANSFER_SERVICE_UUID,
+                RAW_DATA_CHARACTERISTIC_UUID,
+                (error, characteristic) => {
+                    if (error) {
+                        if (error.errorCode === 2 && isRawDataMonitorDisconnectExpected) {
+                            isRawDataMonitorDisconnectExpected = false
+                            return
+                        }
+                        this.onError(error)
+                        rawDataMonitor?.remove()
+                        return
+                    }
+
+                    if (characteristic && characteristic.value) {
+                        onFragmentReceived(characteristic.value)
+                    }
+                }
+            );
+        }
+
+        // Start the data transfer by writing to the Data Communication characteristic
+        this.writeCharacteristicWithoutResponseForDevice(
+            TRANSFER_SERVICE_UUID,
+            DATA_COMMUNICATION_CHARACTERISTIC_UUID,
+            convertHexToBase64(convertNumberToHex(DATA_TRANSFER_START_CODE))
+        ).then(() => {
+            console.log("making reservation with peripheral, wrote to data communication characteristic");
+            setupRawDataMonitor();
+        }).catch((e) => {
+            console.error(e);
+            finishDataTransfer();
+        });
+
+        return isMoreDataToTransfer;
     }
 
     onError = (error: BleError) => {
