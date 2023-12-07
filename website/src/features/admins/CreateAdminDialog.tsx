@@ -1,5 +1,6 @@
 import React from "react";
 import { Admin } from "../../utils/types";
+
 import {
   Button,
   Dialog,
@@ -9,6 +10,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+
 import { createAdminAccount } from "../../api";
 
 type Props = {
@@ -31,6 +33,7 @@ export default function CreateAdminDialog({ open, setOpen, onCreated }: Props) {
       })
       .catch((err) => {
         setError(err.message);
+        console.log(error);
         setLoading(false);
       });
   };
@@ -57,7 +60,7 @@ export default function CreateAdminDialog({ open, setOpen, onCreated }: Props) {
         />
 
       </DialogContent>
-      
+
       <DialogActions>
         <Button onClick={handleCreate} variant="contained" disabled={loading}>
           Invite

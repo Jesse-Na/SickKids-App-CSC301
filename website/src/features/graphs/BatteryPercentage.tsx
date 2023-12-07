@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import  { useMemo } from "react";
 import GraphWrapper from "./GraphWrapper";
 import { Scatter, ScatterChart, XAxis, YAxis, Tooltip } from "recharts";
 import moment from "moment";
@@ -47,6 +47,7 @@ export default function BatteryPercentage({ batteryData }: Props) {
             );
           }}
         />
+        
         {/* I want the data to show up witht the value from the field time but labeled with the field label */}
         <XAxis
           type="number"
@@ -57,6 +58,7 @@ export default function BatteryPercentage({ batteryData }: Props) {
         />
 
         <YAxis />
+
         <Tooltip
           labelFormatter={(value) => {
             return "Battery Reading";
@@ -67,6 +69,7 @@ export default function BatteryPercentage({ batteryData }: Props) {
               .format("MMM D, h:mm a");
           }}
         />
+
       </ScatterChart>
     </GraphWrapper>
   );

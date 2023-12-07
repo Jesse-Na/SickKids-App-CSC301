@@ -1,7 +1,5 @@
-import React, { useEffect, useState } from "react";
-import Login from "./Login";
+import { useEffect, useState } from "react";
 import { Auth, Hub } from "aws-amplify";
-import jwt from "jwt-decode";
 import AuthNavigator from "./AuthNavigator";
 
 type Props = {
@@ -23,6 +21,7 @@ export default function AuthWrapper(props: Props): JSX.Element {
       .catch((err) => {
         setAuthenticated(false);
         setLoading(false);
+        console.log("NOT AUTHENTICATED", err);
       });
     Hub.listen("auth", (data) => {
       console.log("AUTH HUB", data);
@@ -41,6 +40,7 @@ export default function AuthWrapper(props: Props): JSX.Element {
   }, []);
 
   if (loading) return <div />;
+  
   if (!authenticated) return <AuthNavigator />;
 
   return props.children;

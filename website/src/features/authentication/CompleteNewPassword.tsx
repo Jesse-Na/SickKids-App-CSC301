@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import AuthPage from "./AuthPage";
-import { TextField, Button } from "@mui/material";
+import { Button } from "@mui/material";
 import { Auth } from "aws-amplify";
 import { AuthContext } from "./AuthNavigator";
 import { Link, useNavigate } from "react-router-dom";

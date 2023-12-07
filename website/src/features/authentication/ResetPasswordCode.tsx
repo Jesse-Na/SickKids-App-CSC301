@@ -10,11 +10,13 @@ import PasswordInput from "../../components/PasswordInput";
 type Props = {};
 
 export default function ResetPasswordCode({}: Props) {
+
   const navigate = useNavigate();
   const [code, setCode] = React.useState("");
   const [newPassword, setNewPassword] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const { email } = React.useContext(AuthContext);
+
   useEffect(() => {
     if (!email) navigate("/reset-password");
   }, [email]);
@@ -50,9 +52,12 @@ export default function ResetPasswordCode({}: Props) {
         }
       });
   };
+
   return (
     <AuthPage title="Enter Confirmation Code">
+
       <div>Enter the confirmation code sent to the email address {email}</div>
+
       <TextField
         label="Confirmation Code"
         fullWidth
@@ -76,10 +81,13 @@ export default function ResetPasswordCode({}: Props) {
       >
         Confirm
       </Button>
+
       <ErrorMessage message={error} />
+
       <div style={{ display: "grid", placeItems: "center" }}>
         <Link to="/">Back to Login</Link>
       </div>
+      
     </AuthPage>
   );
 }

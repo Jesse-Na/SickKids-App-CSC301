@@ -1,6 +1,5 @@
 import React from "react";
 import moment from "moment";
-import { useNavigate } from "react-router-dom";
 import {
   TableContainer,
   Paper,
@@ -9,15 +8,12 @@ import {
   TableRow,
   TableCell,
   TableBody,
-  Tab,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Button,
-  Toolbar,
 } from "@mui/material";
-import { deleteAdminAccount } from "../../api";
 import { Admin } from "../../utils/types";
 
 type Props = {
@@ -40,7 +36,7 @@ export default function AdminTable({
     }
   };
   const open = Boolean(selectedAdmin);
-  const navigate = useNavigate();
+
   return (
     <>
       <TableContainer

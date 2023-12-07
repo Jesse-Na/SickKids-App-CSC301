@@ -9,9 +9,11 @@ import ErrorMessage from "../../components/ErrorMessage";
 type Props = {};
 
 export default function ResetPassword({}: Props) {
+
   const navigate = useNavigate();
   const { email, setEmail } = React.useContext(AuthContext);
   const [error, setError] = React.useState<string | null>(null);
+
   useEffect(() => {
     setEmail("");
   }, []);
@@ -34,6 +36,7 @@ export default function ResetPassword({}: Props) {
 
   return (
     <AuthPage title="Reset Password">
+
       <TextField
         label="Email"
         fullWidth
@@ -42,6 +45,7 @@ export default function ResetPassword({}: Props) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
+
       <Button
         variant="contained"
         fullWidth
@@ -50,10 +54,13 @@ export default function ResetPassword({}: Props) {
       >
         Reset Password
       </Button>
+
       <ErrorMessage message={error} />
+
       <div style={{ display: "grid", placeItems: "center" }}>
         <Link to="/">Back to Login</Link>
       </div>
+      
     </AuthPage>
   );
 }

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { getDeviceReadings, getPatientReadings } from "../../api";
+import { useEffect, useState } from "react";
+import { getPatientReadings } from "../../api";
 import { DeviceReading } from "../../utils/types";
 import ReadingTable from "../readings/ReadingTable";
 

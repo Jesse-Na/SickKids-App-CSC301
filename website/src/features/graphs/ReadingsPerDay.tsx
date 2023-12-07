@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from "react";
 import GraphWrapper from "./GraphWrapper";
 import { Bar, BarChart, XAxis, YAxis, Tooltip } from "recharts";
 import moment from "moment";

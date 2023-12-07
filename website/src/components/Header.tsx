@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 
 import { Auth } from "aws-amplify";
-import { Button, IconButton, Menu, MenuItem, Popover } from "@mui/material";
+import { IconButton, Menu, MenuItem, Popover } from "@mui/material";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AccountCircle } from "@mui/icons-material";
 

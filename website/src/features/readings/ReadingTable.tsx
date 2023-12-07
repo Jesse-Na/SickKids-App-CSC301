@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { deleteReadings, getDeviceReadings } from "../../api";
 import { DeviceReading } from "../../utils/types";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";

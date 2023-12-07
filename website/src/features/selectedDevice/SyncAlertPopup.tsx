@@ -7,7 +7,7 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-import React from "react";
+
 import { Device } from "../../utils/types";
 
 type Props = {
