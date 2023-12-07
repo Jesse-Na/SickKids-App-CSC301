@@ -22,6 +22,7 @@ export const decodeReading = (
     touchSensor1: !!buff[4],
     touchSensor2: !!buff[5],
     battery: buff[6],
+    rawData: reading.message,
     device,
   };
 };

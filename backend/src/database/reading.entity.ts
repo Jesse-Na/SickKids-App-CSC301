@@ -21,6 +21,9 @@ export default class Reading {
   @Column()
   battery: number;
 
+  @Column("varchar", { length: 200 })
+  rawData: string
+
   @ManyToOne(() => Device, (device) => device.readings)
   device: Device;
 }
