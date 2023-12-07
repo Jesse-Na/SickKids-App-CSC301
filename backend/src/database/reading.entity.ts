@@ -13,13 +13,16 @@ export default class Reading {
   deviceSynced: Date;
 
   @Column()
+  battery: number;
+
+  @Column()
   touchSensor1: boolean;
 
   @Column()
   touchSensor2: boolean;
 
   @Column()
-  battery: number;
+  heartRate: number;
 
   @Column("varchar", { length: 200 })
   rawData: string
