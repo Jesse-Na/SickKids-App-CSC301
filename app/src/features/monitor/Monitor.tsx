@@ -9,15 +9,13 @@ import HeartRate from "./HeartRate";
 import Connectivity from "./Connectivity";
 import { BLEService } from "@src/services/BLEService";
 import { APIService } from "@src/services/APIService";
-import { DATA_COMMUNICATION_CHARACTERISTIC_UUID, DATA_TRANSFER_ACK_INTERVAL, DATA_TRANSFER_FIN_CODE, DATA_TRANSFER_OK_CODE, DATA_TRANSFER_OUT_OF_ORDER_CODE, DATA_TRANSFER_START_CODE, DATA_TRANSFER_TIMEOUT, DEVICE_TO_SERVER_BATCH_SIZE, FRAGMENT_INDEX_SIZE, RAW_DATA_CHARACTERISTIC_UUID, READING_SAMPLE_LENGTH, STATUS_CHARACTERISTIC_UUID, TRANSFER_SERVICE_UUID } from "../../utils/constants";
+import { STATUS_CHARACTERISTIC_UUID, TRANSFER_SERVICE_UUID } from "../../utils/constants";
 import { DBService } from "@src/services/DBService";
-import { Buffer } from "buffer";
 import {
   useBLEContext,
   defaultDeviceProperties,
 } from "@src/context/BLEContextProvider";
 import base64 from "react-native-base64";
-import { combineBytes, convertHexToBase64, convertNumberToHex } from "@src/utils/utils";
 type Props = NativeStackScreenProps<DeviceStackParamList, "Monitor">;
 
 const Monitor = ({ navigation }: Props) => {
@@ -31,17 +29,19 @@ const Monitor = ({ navigation }: Props) => {
   const [deviceUniqueId, setDeviceUniqueId] = useState<string | null>(null);
   const [isMonitoring, setMonitoring] = useState<boolean>(false);
   const [isTransferring, setTransferring] = useState<boolean>(false);
+  const [isFirstTimeConnected, setFirstTimeConnected] = useState<boolean>(true);
 
   // Decode the status characteristic value for realtime updates of battery level, heart rate, and charging status
   const decodeStatusCharacteristic = (characteristicValue: string) => {
+    console.log(characteristicValue)
     const decoded = base64.decode(characteristicValue);
 
-    const battery: number = !Number.isNaN(decoded.charCodeAt(4))
-      ? decoded.charCodeAt(4)
+    const battery: number = !Number.isNaN(decoded.charCodeAt(6))
+      ? decoded.charCodeAt(6)
       : 0;
     setDeviceProperties("batteryLevel", battery);
 
-    const heartRate: number = !Number.isNaN(decoded.charCodeAt(14))
+    const heartRate: number = !Number.isNaN(decoded.charCodeAt(8))
       ? decoded.charCodeAt(8)
       : 0;
 
@@ -58,7 +58,11 @@ const Monitor = ({ navigation }: Props) => {
       setApiKeyError(null);
       setDevice(null);
 
-      // Check if there is a device cached in the DB
+      // Check if there is a device cached in the DB only if this is the first time connecting
+      if (!isFirstTimeConnected) {
+        return;
+      }
+
       DBService.getLatestCloudSyncInfo()
         .then(async (info) => {
           await BLEService.connectToDevice(info.ble_interface_id)
@@ -74,6 +78,7 @@ const Monitor = ({ navigation }: Props) => {
       return;
     }
 
+    setFirstTimeConnected(false);
     setDevice(device);
 
     if (!apiKey || !deviceUniqueId) {
@@ -95,8 +100,6 @@ const Monitor = ({ navigation }: Props) => {
         });
 
       return;
-    } else {
-      refreshDevice();
     }
 
     if (!isMonitoring) {

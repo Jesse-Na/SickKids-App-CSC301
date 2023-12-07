@@ -35,7 +35,7 @@ import {
 import { PermissionsAndroid, Platform } from 'react-native'
 import { API_KEY_CHARACTERISTIC_UUID, CONFIGURATION_SERVICE_UUID, CURRENT_TIME_CHARACTERISTIC_UUID, DATA_COMMUNICATION_CHARACTERISTIC_UUID, DATA_TRANSFER_ACK_INTERVAL, DATA_TRANSFER_FIN_CODE, DATA_TRANSFER_OK_CODE, DATA_TRANSFER_OUT_OF_ORDER_CODE, DATA_TRANSFER_START_CODE, DATA_TRANSFER_TIMEOUT, DEFAULT_MTU_SIZE, DEFAULT_READ_INTERVAL, DEVICE_TO_SERVER_BATCH_SIZE, FRAGMENT_INDEX_SIZE, RAW_DATA_CHARACTERISTIC_UUID, READING_INTERVAL_CHARACTERISTIC_UUID, READING_SAMPLE_LENGTH, TRANSFER_SERVICE_UUID, UNIQUE_DEVICE_ID_CHARACTERISTIC_UUID } from '../utils/constants'
 import { DBService } from './DBService'
-import base64 from 'react-native-base64'
+import { Buffer } from "buffer";
 import { combineBytes, convertHexToBase64, convertNumberToHex } from '@src/utils/utils'
 import { APIService } from './APIService'
 
@@ -178,7 +178,17 @@ class BLEServiceInstance {
 
                                             return { cloudSyncInfo, isCached }
                                         }).then(async ({ cloudSyncInfo, isCached }) => {
-                                            // Write the device's reading interval to the device
+                                            // Get configured reading interval from cloud
+                                            await APIService.getReadingInterval(cloudSyncInfo.ble_interface_id)
+                                                .then(interval => {
+                                                    cloudSyncInfo.reading_interval = interval
+                                                }).catch(error => {
+                                                    console.error("Failed to get reading interval", error)
+                                                })
+
+                                            return { cloudSyncInfo, isCached }
+                                        }).then(async ({ cloudSyncInfo, isCached }) => {
+                                            // Write the configured reading interval to the device
                                             await this.writeCharacteristicWithoutResponseForDevice(CONFIGURATION_SERVICE_UUID, READING_INTERVAL_CHARACTERISTIC_UUID, convertHexToBase64(convertNumberToHex(cloudSyncInfo.reading_interval)))
                                                 .then(() => {
                                                     console.log("Reading interval written to device")
