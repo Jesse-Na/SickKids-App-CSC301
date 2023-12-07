@@ -68,6 +68,8 @@ Do not commit this `.env` file. You can now proceed with the rest of the steps.
 
 ## Testing
 
+We used the cypress framework for testing. All tests are written under `cypress/e2e` folder.
+
 to run the automated tests on terminal, do:
 - `npm install`
 - `npx cypress run`
