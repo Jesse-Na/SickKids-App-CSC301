@@ -87,7 +87,6 @@ This is made with React. A lot of the styling I took from the mui library which 
 # Ryan Notes
 
 ## Todo:
-* Update credentials of databse (maybe add secrets manager or kms to manage them)
+* Update credentials of database (maybe add secrets manager or kms to manage them)
 * Add VPC to serverless configuration so you don't have to add it manually to the two lambdas each deploy
 * When deploying for production, switch stage from dev to prod in severless.yml
-
