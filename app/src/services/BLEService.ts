@@ -331,7 +331,7 @@ class BLEServiceInstance {
     }
 
     // Start a data transfer with the connected device and return true if there is more data to transfer
-    startDataTransfer = (deviceUniqueId: string) => {
+    startDataTransfer = (deviceUniqueId: string, onFinish: (isMoreDataToTransfer: boolean) => void) => {
         if (!this.connectedDevice) {
             console.error(deviceNotConnectedErrorText)
             throw new Error(deviceNotConnectedErrorText)
@@ -362,20 +362,21 @@ class BLEServiceInstance {
             clearInterval(transferTimeoutInterval);
             isRawDataMonitorDisconnectExpected = true;
             rawDataMonitor?.remove();
+            onFinish(isMoreDataToTransfer);
         }
 
         // Call to finish and start a new data transfer
         const resetDataTransfer = () => {
-            finishDataTransfer();
             console.log("note there is more data to transfer");
             isMoreDataToTransfer = true;
+            finishDataTransfer();
         }
 
         let prevExpectedFragmentIndex = 0;
         let lastReceivedFragmentIndex = DATA_TRANSFER_FIN_CODE;
         let nextExpectedFragmentIndex = 0;
         let totalFragmentsReceived = 0;
-        let fragmentArray: string[] = []; // Array of fragments/chunks that will be combined into a sample
+        let fragmentArray: Buffer[] = []; // Array of fragments/chunks that will be combined into a sample
         let bytesRemainingToCompleteSample = READING_SAMPLE_LENGTH;
 
         // Start a timer to check if we have received any fragments in the last DATA_TRANSFER_TIMEOUT seconds
@@ -391,7 +392,6 @@ class BLEServiceInstance {
         // Handle when we receive a fragment from the device
         const onFragmentReceived = (base64EncodedFragmentString: string) => {
             const bufferForCharacteristic = Buffer.from(base64EncodedFragmentString, "base64");
-            console.log("received fragment: ", bufferForCharacteristic);
             const fragmentIndex = combineBytes(bufferForCharacteristic, 0, FRAGMENT_INDEX_SIZE);
 
             // Check if the fragment is a termination fragment
@@ -406,13 +406,15 @@ class BLEServiceInstance {
                         convertHexToBase64(convertNumberToHex(DATA_TRANSFER_OK_CODE) + convertNumberToHex(DATA_TRANSFER_FIN_CODE, 4))
                     ).then(() => {
                         console.log("acknowledged termination fragment");
+                    }).catch((e) => {
+                        console.error(e);
+                    }).finally(() => {
+                        if (totalFragmentsReceived === 0) {
+                            finishDataTransfer();
+                        } else {
+                            resetDataTransfer();
+                        }
                     })
-
-                    if (totalFragmentsReceived === 0) {
-                        finishDataTransfer();
-                    } else {
-                        resetDataTransfer();
-                    }
 
                     return;
                 }
@@ -451,7 +453,7 @@ class BLEServiceInstance {
             }
 
             const fragmentData = bufferForCharacteristic.subarray(FRAGMENT_INDEX_SIZE, FRAGMENT_INDEX_SIZE + READING_SAMPLE_LENGTH);
-            fragmentArray.push(fragmentData.join(""));
+            fragmentArray.push(fragmentData);
             bytesRemainingToCompleteSample -= fragmentData.length;
             totalFragmentsReceived++;
             nextExpectedFragmentIndex++;
@@ -463,7 +465,7 @@ class BLEServiceInstance {
 
             if (bytesRemainingToCompleteSample <= 0) {
                 // Compile fragments into sample and save to DB
-                const sample = fragmentArray.join("").substring(0, READING_SAMPLE_LENGTH);
+                const sample = Buffer.from(Buffer.concat(fragmentArray).subarray(0, READING_SAMPLE_LENGTH)).toString("base64");
                 DBService.saveReading(sample, deviceUniqueId);
 
                 // Sync readings to cloud every DEVICE_TO_SERVER_BATCH_SIZE readings
@@ -472,7 +474,7 @@ class BLEServiceInstance {
                 }
 
                 // Reset state
-                fragmentArray = [];
+                fragmentArray = []
                 bytesRemainingToCompleteSample = READING_SAMPLE_LENGTH;
             }
         }
@@ -512,8 +514,6 @@ class BLEServiceInstance {
             console.error(e);
             finishDataTransfer();
         });
-
-        return isMoreDataToTransfer;
     }
 
     onError = (error: BleError) => {

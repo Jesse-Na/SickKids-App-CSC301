@@ -9,7 +9,7 @@ import HeartRate from "./HeartRate";
 import Connectivity from "./Connectivity";
 import { BLEService } from "@src/services/BLEService";
 import { APIService } from "@src/services/APIService";
-import { STATUS_CHARACTERISTIC_UUID, TRANSFER_SERVICE_UUID } from "../../utils/constants";
+import { DATA_SYNC_INTERVAL, STATUS_CHARACTERISTIC_UUID, TRANSFER_SERVICE_UUID } from "../../utils/constants";
 import { DBService } from "@src/services/DBService";
 import {
   useBLEContext,
@@ -33,7 +33,6 @@ const Monitor = ({ navigation }: Props) => {
 
   // Decode the status characteristic value for realtime updates of battery level, heart rate, and charging status
   const decodeStatusCharacteristic = (characteristicValue: string) => {
-    console.log(characteristicValue)
     const decoded = base64.decode(characteristicValue);
 
     const battery: number = !Number.isNaN(decoded.charCodeAt(6))
@@ -129,14 +128,18 @@ const Monitor = ({ navigation }: Props) => {
     // Start data transfer
     setTransferring(true);
 
-    if (BLEService.startDataTransfer(deviceUniqueId)) {
-      // More data to transfer so immediately start the next transfer
-      setTransferring(false);
-    } else {
-      setTimeout(() => {
-        setTransferring(false);
-      }, 30000);
-    }
+    BLEService.startDataTransfer(deviceUniqueId, (isMoreDataToTransfer: boolean) => {
+      if (isMoreDataToTransfer) {
+        // More data to transfer so start another round of transfer almost immediately
+        setTimeout(() => {
+          setTransferring(false);
+        }, 5000);
+      }
+        setTimeout(() => {
+          setTransferring(false);
+        }, DATA_SYNC_INTERVAL);
+
+    })
 
   }, [device, apiKey, deviceUniqueId, isTransferring]);
 

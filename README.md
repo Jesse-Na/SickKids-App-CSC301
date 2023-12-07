@@ -20,6 +20,7 @@ This project is primarily a mobile app that enables research studies into patien
     * The raw data will be stored in the backend
 * Users can see battery level, connectivity status to device and internet, and heart rate in realtime on the mobile app [DONE]
     * Notifications are sent out on low battery level
+    * The bluetooth indicator should show the last time it was connected.
 * Self-report questionnaires can be filled in the app [DONE]
     * Questionnaires are uploaded to the backend upon submission [DONE]
     * Notifications are sent out reminding users when a questionnaire is available

@@ -6,27 +6,11 @@ import { convertMsToString } from "../../utils/time.utils";
 import { PatientPreview } from "../../utils/types";
 import AppTable from "../../components/AppTable";
 
-// hard code me some patients for testing purposees
-const dev = true;
-const patients_test: PatientPreview[] = [
-  {
-    id: "patient-test",
-    createdAt: "2023-01-01T10:00:00Z",
-    removedAt: null,
-    activeDevice: {
-      id: "device-67890",
-      interval: 60,
-      name: "Heart Rate Monitor",
-      createdAt: "2023-01-01T09:30:00Z",
-    },
-  },
-];
+type Props = {};
 
-export default function AllPatientsTable() {
+export default function AllPatientsTable({}: Props) {
   const navigate = useNavigate();
-  const [patients, setPatients] = React.useState<PatientPreview[]>(
-    dev ? patients_test : []
-  );
+  const [patients, setPatients] = React.useState<PatientPreview[]>([]);
   const filterSearch = (device: any, search: string) => {
     return (
       device.id.toLowerCase().includes(search.toLowerCase()) ||

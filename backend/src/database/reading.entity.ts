@@ -32,8 +32,7 @@ export default class Reading {
   @Column()
   heartRate: number;
 
-  // The raw data of the reading
-  @Column("varchar", { length: 200 })
+  @Column("varchar", { length: 400 })
   rawData: string
 
   // The device that the reading corresponds to
