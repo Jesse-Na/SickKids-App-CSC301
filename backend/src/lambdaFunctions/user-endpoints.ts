@@ -28,7 +28,7 @@ app.post("/users/readings", async function (req, res) {
   const deviceId = req.body.deviceId;
   const db = await getDatabase();
 
-  const apiKey = req.query.apiKey as string;
+  // check if user has api key
   if (!req.query.apiKey) {
     return res.status(401).send("Api key required");
   }
@@ -45,8 +45,6 @@ app.post("/users/readings", async function (req, res) {
   if (readings.length == 0) {
     return res.status(400).send();
   }
-
-  //check if device exists
 
   //decode all readings and ensure input format is correct
   let decoded: Omit<Reading, "id">[] = [];
@@ -66,10 +64,10 @@ app.post("/users/readings", async function (req, res) {
 });
 
 app.get("/users/interval", async function (req, res) {
-  const apiKey = req.query.apiKey as string;
   const deviceId = req.body.deviceId;
   const db = await getDatabase();
 
+  // check if user has api key
   if (!req.query.apiKey) {
     return res.status(401).send("Api key required");
   }
@@ -84,10 +82,10 @@ app.get("/users/interval", async function (req, res) {
 });
 
 app.get("/users/selfReporting", async function (req, res) {
-  const apiKey = req.query.apiKey as string;
   const deviceId = req.body.deviceId;
   const db = await getDatabase();
 
+  // check if user has api key
   if (!req.query.apiKey) {
     return res.status(401).send("Api key required");
   }
@@ -104,10 +102,10 @@ app.get("/users/selfReporting", async function (req, res) {
 });
 
 app.post("/users/selfReporting", async function (req, res) {
-  const apiKey = req.query.apiKey as string;
   const deviceId = req.body.deviceId;
   const db = await getDatabase();
 
+  // check if user has api key
   if (!req.query.apiKey) {
     return res.status(401).send("Api key required");
   }
@@ -163,7 +161,7 @@ app.post("/users/selfReporting", async function (req, res) {
   res.send(patientReports);
 });
 
-app.use((req, res, next) => {
+app.use((req, res) => {
   console.log("404", req);
   return res.set("Access-Control-Allow-Origin", "*").status(404).send({
     reqPath: req.path,
