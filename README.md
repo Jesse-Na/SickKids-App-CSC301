@@ -23,7 +23,7 @@ This project is primarily a mobile app that enables research studies into patien
 * Self-report questionnaires can be filled in the app [DONE]
     * Questionnaires are uploaded to the backend upon submission [DONE]
     * Notifications are sent out reminding users when a questionnaire is available
-* Users are asked if they have been wearing the compression garments or wish to withdraw from the study when they have not connected to the device in a while
+* Users are asked via notification if they have been wearing the compression garments or wish to withdraw from the study when they have not connected to the device in a while
 * Admin can login to web app [DONE]
 * Web app allows admins to invite other admins [DONE]
 * Admins can view and export reading data for a specific patient or device [DONE]
@@ -31,7 +31,7 @@ This project is primarily a mobile app that enables research studies into patien
 * Admins can see a list of devices and patients [DONE]
     * Admins can see which patient is currently associated with a device (which patient/device is active) [DONE]
 * Admins can configure reading interval and questionnaire frequency for a specific device [DONE]
-* Admins are alerted when a study participant has not uploaded their readings in a while
+* Admins are alerted when a study participant has not uploaded their readings in a while [DONE]
 
 Definitions:
 * Reading interval refers to the period that the sensor device will collect samples. It is NOT the period of how often the mobile app collects data from the sensor.
@@ -41,11 +41,15 @@ Definitions:
 This list is a compiled version of whatever is not marked as DONE in the "Key Features and their Implementation Status" section with additional details.
 
 * Admin login is hidden behind some kind of secret swiping or gesture code
+    * This feature is a minor UI/UX improvement
     * You have the option to be creative with this, we recommend looking to the SettingsTab.tsx file in the mobile app and adding some logic to track user input. Based on the user input, the Login.tsx component should be displayed or hidden.
 * Notifications for battery level, self-report questionnaires, and asking the user if they wish to withdraw (after prolonged activity)
     * This will be a harder task than it seems. You will first need to look into the difference between how iOS and Android handles notifications, and be prepared to make a Firebase account for Android notifications. Ignore all reference to notifications in the app, we recommend starting from scratch.
 * Admins are alerted when a study participant has not uploaded their readings in a while
-    * This feature is challenging. We recommend implementing this on the backend side as a new lambda function which runs as a service. The service should periodically check if a device with an active patient has not uploaded data in a while, and then send some kind of alert to the researchers (maybe via email).
+    * This feature could be improved to send an email to the researchers instead of only displaying a pop-up alert on the web app.
+    * This feature can also be improved by sending an alert automatically once the admin logs in, instead of the admin having to click on an individual device.
+* Sensor reading collection from sensor device
+    * This functionality could be improved by collecting data from the sensor device even when the app is terminated, but it is very challenging to do so. Android and iOS have completely different approaches when it comes to terminated apps, and both have different kinds of workarounds. We also currently know of no good way of testing changes for this feature other than setting up some kind of logging service like Splunk. Finally, the cherry on top is that because we use react native and react-native-ble-plx, we have layers of abstraction in front of us making it hard to do the granular things on iOS and Android that need to be done in order to achieve the desired effect.
 
 ## Who are the target users?
 
@@ -75,7 +79,7 @@ Technologies used:
 ![Backend Architecture](./backend_architecture.png)
 
 ### App
-This is a React Native app (https://reactnative.dev/) made with expo (https://expo.dev/). Expo does nice things such as makes certain native phone functionalities easier like permissions or camera or whatever you want. Also if you look at eas under expo, there may be some setup but it will allow for building bundles that can be submitted to app stores so you don't have to yourself (you just need a developer account at least for apple).
+This is a React Native app (https://reactnative.dev/) made with expo (https://expo.dev/). Expo does nice things such as makeing certain native phone functionalities easier like permissions, camera, or whatever you want. Also if you look at eas under expo, there may be some setup, but it will allow for building bundles that can be submitted to app stores so you don't have to yourself (you just need a developer account, at least for apple).
 
 ### Website
 This is made with React. A lot of the styling I took from the mui library which is pretty much taken from google. Otherwise it uses Amplify from aws to talk to the backend and do things such as the login so I don't have to worry about security.
@@ -83,7 +87,6 @@ This is made with React. A lot of the styling I took from the mui library which 
 # Ryan Notes
 
 ## Todo:
-* Update credentials of databse (maybe add secrets manager or kms to manage them)
+* Update credentials of database (maybe add secrets manager or kms to manage them)
 * Add VPC to serverless configuration so you don't have to add it manually to the two lambdas each deploy
-* When deoploying for production, switch stage from dev to prod in severless.yml
-
+* When deploying for production, switch stage from dev to prod in severless.yml

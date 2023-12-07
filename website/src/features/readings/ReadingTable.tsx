@@ -16,6 +16,13 @@ const columns: GridColDef[] = [
 
   { field: "timestamp", headerName: "Timestamp", width: 200, editable: false },
 
+  {
+    field: "deviceSynced",
+    headerName: "Synced to Phone",
+    width: 200,
+    editable: false,
+  },
+
   { field: "battery", headerName: "Battery", width: 100 },
 
   {
@@ -32,48 +39,12 @@ const columns: GridColDef[] = [
     editable: false,
   },
 
-  {
-    field: "internalElectrodermalActivity",
-    headerName: "Internal Electrodermal Activity",
-    width: 150,
-    editable: false,
-  },
-
-  {
-    field: "externalElectrodermalActivity",
-    headerName: "External Electrodermal Activity",
-    width: 150,
-    editable: false,
-  },
-
   { field: "heartRate", headerName: "Heart Rate", width: 150, editable: false },
 
-  { field: "SpO2", headerName: "SpO2", width: 150, editable: false },
-
   {
-    field: "IMUFrequency",
-    headerName: "IMU Frequency",
-    width: 150,
-    editable: false,
-  },
-
-  {
-    field: "numIMUSamples",
-    headerName: "Number of IMU Samples",
-    width: 150,
-    editable: false,
-  },
-
-  { field: "accelX", headerName: "Accel X", width: 150, editable: false },
-
-  { field: "accelY", headerName: "Accel Y", width: 150, editable: false },
-
-  { field: "accelZ", headerName: "Accel Z", width: 150, editable: false },
-
-  {
-    field: "deviceSynced",
-    headerName: "Synced to Phone",
-    width: 200,
+    field: "rawData",
+    headerName: "Raw Data",
+    width: 500,
     editable: false,
   },
 ];
@@ -91,9 +62,9 @@ export default function ReadingTable({ data, reload, fileId }: Props) {
   };
   const exportCSV = () => {
     // Create a csv file
-    const headers = Object.keys(data[0]).join(",") + "\n";
+    const headers = ["Timestamp", "Device Synced", "Raw Data"].join(",") + "\n";
     const csv: BlobPart =
-      headers + data.map((row) => Object.values(row)).join("\n");
+      headers + data.map((row) => [row.timestamp, row.deviceSynced, row.rawData]).join("\n");
 
     const blob = new Blob([csv], { type: "text/csv" });
 
@@ -104,7 +75,7 @@ export default function ReadingTable({ data, reload, fileId }: Props) {
     a.setAttribute("href", url);
     a.setAttribute(
       "download",
-      `${fileId}-${moment().format("DD-MM-YYYY")}.csv`
+      `${fileId}-readings-${moment().format("DD-MM-YYYY")}.csv`
     );
     document.body.appendChild(a);
     a.click();

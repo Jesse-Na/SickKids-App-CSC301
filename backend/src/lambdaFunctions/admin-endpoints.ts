@@ -4,7 +4,6 @@ import serverless from "serverless-http";
 import getDatabase from "../database/db";
 import Device from "../database/device.entity";
 import Reading from "../database/reading.entity";
-import {  } from "../utils/device.utils";
 import dotenv from "dotenv";
 import PatientDeviceHistory from "../database/patient-device-history.entity";
 import Patient from "../database/patient.entity";
@@ -59,11 +58,14 @@ app.get("/admin/devices", async function (req, res) {
     res.status(500).send({ error: "Could not retreive devices", e });
   }
 });
+
 app.get("/admin/device/:deviceId", async function (req, res) {
   console.log("getting device");
   const db = await getDatabase();
   const id = req.params.deviceId;
   console.log("got device", JSON.stringify({ id }));
+
+   // find the device and format it, then resend it
   try {
     const device = await db
       .getRepository(Device)
@@ -152,7 +154,6 @@ app.delete("/admin/device/:deviceId", async function (req, res) {
 });
 
 app.get("/admin/linked-device", async function (req, res) {
-  const apiKey = req.query.apiKey as string;
   const deviceId = req.body.deviceId;
   const db = await getDatabase();
 
@@ -170,6 +171,7 @@ app.get("/admin/linked-device", async function (req, res) {
   return res.send(device);
 });
 
+// Registers the device to a new patient
 app.post("/admin/register-device", async function (req, res) {
   const db = await getDatabase();
   const { deviceId, interval, userId } = req.body;
@@ -380,7 +382,7 @@ app.get("/admin/patient/:patientId/dailyUsage", async function (req, res) {
   res.send(formattedReadingCount);
 });
 
-app.use((req, res, next) => {
+app.use((req, res) => {
   console.log("404", req);
   return res.set("Access-Control-Allow-Origin", "*").status(404).send({
     reqPath: req.path,

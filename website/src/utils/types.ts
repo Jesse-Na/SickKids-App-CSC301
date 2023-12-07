@@ -15,6 +15,7 @@ export type DeviceReading = {
   accelZ?: number[];
   deviceSynced?: string;
   id: number;
+  rawData: string;
 };
 
 export type Admin = {

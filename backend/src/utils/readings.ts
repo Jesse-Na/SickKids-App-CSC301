@@ -19,9 +19,10 @@ export const decodeReading = (
   return {
     deviceSynced: new Date(reading.synced),
     timestamp: new Date(combineBytes(buff, 0, 4) * 1000),
-    touchSensor1: !!buff[4],
-    touchSensor2: !!buff[5],
-    battery: buff[6],
+    touchSensor1: !!combineBytes(buff, 8, 10),
+    touchSensor2: !!combineBytes(buff, 10, 12),
+    heartRate: buff[14],
+    battery: buff[4],
     rawData: reading.message,
     device,
   };
