@@ -26,13 +26,17 @@ type Props = {
 };
 
 const SelfReportPage = (props: Props) => {
+  // hook to retrieve compression garment context infomration
   const { device } = useBLEContext();
+
+  // state to manage report information on wear usage
   const [selectedDate, setSelectedDate] = useState<moment.Moment>(moment());
   const [reports, setReports] = useState<UsageReport[]>([]);
   const [hours, setHours] = useState("");
   const [minutes, setMinutes] = useState("");
   const [apiKey, setApiKey] = useState<string | null>(null);
 
+  // reload usage reports from the server
   const reloadReports = () => {
     if (apiKey) {
       API.get("UserBackend", "/selfReporting", {
@@ -46,6 +50,7 @@ const SelfReportPage = (props: Props) => {
     }
   };
 
+  // useEffect to load API key and reports when the device changes
   useEffect(() => {
     if (!device) {
       return;
@@ -67,6 +72,7 @@ const SelfReportPage = (props: Props) => {
     reloadReports();
   }, [device]);
 
+  // useMemo to validate input from users on wear time, make sure it is a valid report
   const hoursError = useMemo(() => {
     if (hours === "") return false;
     const hoursNumber = Number(hours);
@@ -91,6 +97,7 @@ const SelfReportPage = (props: Props) => {
     );
   }, [hours, minutes]);
 
+  // submits the self-report
   const submit = () => {
     console.log("submitting");
     const newReport = {
@@ -128,12 +135,15 @@ const SelfReportPage = (props: Props) => {
       ]
     );
   };
+
+  // retrieve an existing report for the selected date
   const existingReport = useMemo(() => {
     return (
       reports.find((r) => r.date === selectedDate.format("YYYY-MM-DD")) ?? null
     );
   }, [selectedDate, reports]);
 
+  // update input vaues based on an existing report
   useEffect(() => {
     if (existingReport) {
       setHours(String(Math.floor(existingReport.minutesWorn / 60)));
