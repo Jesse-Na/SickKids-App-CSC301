@@ -5,6 +5,7 @@ export type UsageReport = {
   minutesWorn: number;
 };
 
+//retrieves all usage reports from storage
 export const getAllReports = async (): Promise<UsageReport[]> => {
   const storage = await AsyncStorage.getItem("usageReports");
   if (storage) {
@@ -14,6 +15,7 @@ export const getAllReports = async (): Promise<UsageReport[]> => {
   }
 };
 
+// add a new usage report to the storage of the mobile app
 export const addReport = async (report: UsageReport) => {
   const reports = await getAllReports();
   const newReports = [...reports.filter((r) => r.date !== report.date), report];
@@ -21,6 +23,7 @@ export const addReport = async (report: UsageReport) => {
   return newReports;
 };
 
+// remove a usage report with the specified date from storage
 export const removeReport = async (date: string) => {
   const reports = await getAllReports();
   const newReports = reports.filter((report) => report.date !== date);
