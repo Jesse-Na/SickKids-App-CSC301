@@ -126,7 +126,3 @@ We chose this GitHub workflow to facilitate a collaborative, and stable developm
 ## Coding Standards and Guidelines
 
 - Since the primary language of this project will be Typescript. We will stick to the regular typescript conventions such as camelCase variable and function names and general coding conventions such as keeping each function less than 100 lines.
-
-## Licenses
-- Apache Version 2.0
-  - Our partner has allowed us to make this project open-source, so we used Apache (open-source license)
