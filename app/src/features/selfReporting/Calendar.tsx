@@ -1,24 +1,36 @@
+// Import necessary components and libraries from React Native
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
-import CalendarDay from "./CalendarDay";
 import moment from "moment";
+
+// Import custom components and utilities
+import CalendarDay from "./CalendarDay";
 import CustomTextInput from "@src/components/CustomTextInput";
 import { UsageReport } from "./selfReporting.utils";
 
+// Define the type for the props expected by the Calendar component
 type Props = {
   selectedDate: moment.Moment;
   reports: UsageReport[];
   setSelectedDate: (date: moment.Moment) => void;
 };
 
+// Calendar component definition
 const Calendar = ({ selectedDate, setSelectedDate, reports }: Props) => {
+  // State for managing the month offset
   const [monthOffset, setMonthOffset] = useState(0);
+
+  // Calculate the current month based on the month offset
   const currentMonth = moment().startOf("month").add(monthOffset, "months");
+
+  // Calculate the number of weeks in the current month
   const numWeeksInMonth =
     currentMonth
       .clone()
       .endOf("month")
       .diff(currentMonth.clone().startOf("week"), "weeks") + 1;
+  
+  // Render the Calendar component
   return (
     <View style={{ padding: 10, backgroundColor: "#eee" }}>
       <View
