@@ -8,6 +8,15 @@ import {
 import React, { useMemo } from "react";
 import moment, { Moment } from "moment";
 
+/**
+ * CalendarDay Component
+ * @param {Object} props - properties for CalendarDay component.
+ * @param {Moment} props.date - date represented by CalendarDay.
+ * @param {boolean} [props.hidden] - indicates whether the day should be hidden. CalendarDays that have a report and have passed should be hidden.
+ * @param {boolean} props.hasReport - indicates whether there is a report for the day.
+ * @returns {React.Component} - represents a day of reporting in the calendar.
+ */
+
 type Props = {
   date: Moment;
   hidden?: boolean;
@@ -18,6 +27,8 @@ type Props = {
 };
 
 const CalendarDay = (props: Props) => {
+  // determine the background color based on the properties of the day. if yes, the the colour will be green. if not and CalendarDay is today, the colour is blue. 
+  // if there is no report and CalendarDay has already passed, the colour is red to indicate a missing report.
   const backgroundColor = useMemo(() => {
     if (props.hasReport) return "green";
     if (props.date.isSame(moment(), "day")) return "blue";
@@ -25,6 +36,7 @@ const CalendarDay = (props: Props) => {
     return "red";
   }, [props.date]);
 
+  // determine the border width based on whether the day is selected. if not selected, the width is 0 so the day is hidden.
   const borderWidth = useMemo(() => {
     if (props.isSelected) return 4;
     return 0;
