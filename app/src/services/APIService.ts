@@ -35,6 +35,48 @@ class APIServiceInstance {
         Amplify.configure(AmplifyConfig)
     }
 
+    getSelfReports = async (bleInterfaceId: string) => {
+        const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
+        const hexId = convertBase64ToHex(cloudSyncInfo.device_id);
+
+        const selfReports = await API.get("UserBackend", "/selfReporting", {
+            queryStringParameters: {
+                apiKey: cloudSyncInfo.api_key,
+            },
+            body: {
+                deviceId: hexId
+            }
+        })
+            .then((selfReports) => {
+                return selfReports;
+            })
+            .catch((e) => console.log("failed to get self reports", e))
+
+        return selfReports;
+    }
+
+    addSelfReport = async (bleInterfaceId: string, date: moment.Moment, minutes: number) => {
+        const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);
+        const hexId = convertBase64ToHex(cloudSyncInfo.device_id);
+
+        const selfReports = await API.post("UserBackend", "/selfReporting", {
+            queryStringParameters: {
+                apiKey: cloudSyncInfo.api_key,
+            },
+            body: {
+                deviceId: hexId,
+                date: date.format("YYYY-MM-DD"),
+                minutes
+            }
+        })
+            .then((selfReports) => {
+                return selfReports;
+            })
+            .catch((e) => console.log("failed to add self report", e))
+
+        return selfReports;
+    }
+
     // Get reading interval from backend and update cloudSyncInfo table with new interval
     getReadingInterval = async (bleInterfaceId: string) => {
         const cloudSyncInfo = await DBService.getCloudSyncInfoForBleInterfaceId(bleInterfaceId);

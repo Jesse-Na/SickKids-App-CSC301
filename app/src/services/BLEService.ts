@@ -189,7 +189,7 @@ class BLEServiceInstance {
                                             return { cloudSyncInfo, isCached }
                                         }).then(async ({ cloudSyncInfo, isCached }) => {
                                             // Write the configured reading interval to the device
-                                            await this.writeCharacteristicWithoutResponseForDevice(CONFIGURATION_SERVICE_UUID, READING_INTERVAL_CHARACTERISTIC_UUID, convertHexToBase64(convertNumberToHex(cloudSyncInfo.reading_interval)))
+                                            await this.writeCharacteristicWithoutResponseForDevice(CONFIGURATION_SERVICE_UUID, READING_INTERVAL_CHARACTERISTIC_UUID, convertHexToBase64(convertNumberToHex(cloudSyncInfo.reading_interval, 4)))
                                                 .then(() => {
                                                     console.log("Reading interval written to device")
                                                 }).catch(error => {
@@ -452,7 +452,7 @@ class BLEServiceInstance {
                 }, DATA_TRANSFER_ACK_INTERVAL);
             }
 
-            const fragmentData = bufferForCharacteristic.subarray(FRAGMENT_INDEX_SIZE, FRAGMENT_INDEX_SIZE + READING_SAMPLE_LENGTH);
+            const fragmentData = Buffer.from(bufferForCharacteristic.subarray(FRAGMENT_INDEX_SIZE, FRAGMENT_INDEX_SIZE + READING_SAMPLE_LENGTH));
             fragmentArray.push(fragmentData);
             bytesRemainingToCompleteSample -= fragmentData.length;
             totalFragmentsReceived++;

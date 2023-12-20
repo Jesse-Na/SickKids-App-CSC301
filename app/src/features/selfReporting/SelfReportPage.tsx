@@ -11,13 +11,8 @@ import CustomTextInput from "@src/components/CustomTextInput";
 import CustomButton from "@src/components/CustomButton";
 import Calendar from "./Calendar";
 import moment from "moment";
-import {
-  UsageReport,
-  addReport,
-  getAllReports,
-  removeReport,
-} from "./selfReporting.utils";
-import { API } from "aws-amplify";
+import { UsageReport } from "./selfReporting.utils";
+import { APIService } from "@src/services/APIService";
 import { DBService } from "@src/services/DBService";
 import { useBLEContext } from "@src/context/BLEContextProvider";
 
@@ -26,7 +21,7 @@ type Props = {
 };
 
 const SelfReportPage = (props: Props) => {
-  // hook to retrieve compression garment context infomration
+  // hook to retrieve compression garment context information
   const { device } = useBLEContext();
 
   // state to manage report information on wear usage
@@ -38,14 +33,11 @@ const SelfReportPage = (props: Props) => {
 
   // reload usage reports from the server
   const reloadReports = () => {
-    if (apiKey) {
-      API.get("UserBackend", "/selfReporting", {
-        queryStringParameters: {
-          apiKey: apiKey,
-        },
-      }).then((reports) => {
-        console.log("GOT REPORTS", reports);
+    if (device) {
+      APIService.getSelfReports(device.id).then((reports) => {
         setReports(reports);
+      }).catch((e) => {
+        console.error(e);
       });
     }
   };
@@ -99,28 +91,21 @@ const SelfReportPage = (props: Props) => {
 
   // submits the self-report
   const submit = () => {
-    console.log("submitting");
-    const newReport = {
-      date: selectedDate.format("YYYY-MM-DD"),
-      minutes: totalTime,
-    };
-    API.post("UserBackend", "/selfReporting", {
-      body: newReport,
-      queryStringParameters: {
-        apiKey: apiKey,
-      },
-    }).then((reports) => {
-      console.log("got reports", reports);
-      setReports(reports);
-    });
+    if (device) {
+      console.log("submitting self report");
+      APIService.addSelfReport(device.id, selectedDate, totalTime).then((selfReports) => {
+        setReports(selfReports);
+      }).catch((e) => {
+        console.error(e);
+      });
+    }
   };
+
   const handleSubmit = () => {
     Alert.alert(
       "Confirm Submission",
-      `Do you want to submit you wore them for ${
-        hours.length == 0 ? 0 : hours
-      } hours and ${
-        minutes.length == 0 ? 0 : minutes
+      `Do you want to submit you wore them for ${hours.length == 0 ? 0 : hours
+      } hours and ${minutes.length == 0 ? 0 : minutes
       } minutes. This cannot be changed.`,
       [
         {
@@ -143,7 +128,7 @@ const SelfReportPage = (props: Props) => {
     );
   }, [selectedDate, reports]);
 
-  // update input vaues based on an existing report
+  // update input values based on an existing report
   useEffect(() => {
     if (existingReport) {
       setHours(String(Math.floor(existingReport.minutesWorn / 60)));

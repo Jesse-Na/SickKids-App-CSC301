@@ -102,7 +102,7 @@ app.get("/users/selfReporting", async function (req, res) {
 });
 
 app.post("/users/selfReporting", async function (req, res) {
-  const deviceId = req.body.deviceId;
+  const { deviceId, date, minutes } = req.body;
   const db = await getDatabase();
 
   // check if user has api key
@@ -118,7 +118,6 @@ app.post("/users/selfReporting", async function (req, res) {
     return res.status(401).send("Api key is invalid");
   }
 
-  const { date, minutes } = req.body;
   const formattedDate = moment(date).format("YYYY-MM-DD");
 
   // find the patient

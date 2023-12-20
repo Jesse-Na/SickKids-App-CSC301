@@ -14,6 +14,10 @@ export const convertMsToString = (ms: number) => {
       arr.push(`${value} ${unit}`);
     }
   }
-  
+
   return arr.reverse().join(", ");
 };
+
+export const convertSecondsToString = (seconds: number) => {
+  return convertMsToString(seconds * 1000);
+}

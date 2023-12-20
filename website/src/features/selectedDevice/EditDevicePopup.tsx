@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { Device } from "../../utils/types";
-import { convertMsToString } from "../../utils/time.utils";
+import { convertMsToString, convertSecondsToString } from "../../utils/time.utils";
 import { updateDevice } from "../../api";
 
 type Props = {
@@ -39,7 +39,7 @@ export default function EditDevicePopup({
   }, [open, device]);
 
   const intervalError =
-    Number.isNaN(parseInt(interval)) || parseInt(interval) < 1000;
+    Number.isNaN(parseInt(interval)) || parseInt(interval) < 1 || parseInt(interval) > 65535;
   const nameError = name.length === 0;
   const frequencyError =
     Number.isNaN(parseInt(frequency)) || parseInt(frequency) < 1;
@@ -72,7 +72,7 @@ export default function EditDevicePopup({
             value={interval}
             onChange={(e) => setInterval(e.target.value)}
             variant="outlined"
-            label="Reading interval (ms)"
+            label="Reading interval (s)"
             type="number"
             error={intervalError}
           />
@@ -87,7 +87,7 @@ export default function EditDevicePopup({
         </Box>
         <Box>
           <Typography>
-            Interval is: {convertMsToString(parseInt(interval))}
+            Interval is: {convertSecondsToString(parseInt(interval))}
           </Typography>
           <Typography sx={{ fontSize: "0.8em" }}>
             Note that each reading takes 1 sec so reading with an interval of 1

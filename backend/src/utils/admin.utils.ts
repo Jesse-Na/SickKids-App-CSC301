@@ -3,8 +3,8 @@ import getDatabase from "../database/db";
 import Device from "../database/device.entity";
 import APIKey from "../database/api-key.entity";
 
-const DEFAULT_INTERVAL = 60000;
-const DEFAULT_FREQUENCY = 1;
+const DEFAULT_INTERVAL = 60; // In seconds
+const DEFAULT_FREQUENCY = 1; // In days
 
 export const getOrRegisterPatient = async (patientId: string) => {
   const db = await getDatabase();

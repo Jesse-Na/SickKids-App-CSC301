@@ -10,7 +10,7 @@ export const MIN_RSSI = -80;
 export const DEFAULT_MTU_SIZE = 251; // In bytes
 
 export const DATA_SYNC_INTERVAL = 30000; // In milliseconds
-export const DEFAULT_READ_INTERVAL = 60000; // In seconds, unsigned 2 bytes
+export const DEFAULT_READ_INTERVAL = 60; // In seconds, unsigned 2 bytes
 export const MAX_SCAN_DURATION = 10000; // In milliseconds
 export const FRAGMENT_INDEX_SIZE = 2; // In bytes
 export const READING_SAMPLE_LENGTH = 170; // In bytes
